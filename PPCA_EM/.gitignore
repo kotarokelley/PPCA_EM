@@ -3,3 +3,15 @@
 *.project
 *.settings
 *.cproject
+/include/EMdata.h
+/include/DataStructures.h
+/include/NumericalRecipes.h
+/src/EMdata.cpp
+/src/mrcParser.cpp
+/src/NumericalRecipes.cpp
+/test/obj/
+/test/test_NumericalRecipes
+/test/test_NumericalRecipes.cpp
+/test/test_NumericalRecipes_makefile
+/test/test_class
+/test/test_class2D_makefile_2
