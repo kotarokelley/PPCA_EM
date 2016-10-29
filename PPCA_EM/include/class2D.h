@@ -42,6 +42,7 @@ class class2D{
 	 **/
 	public:
 
+
 	~ class2D() {		// clean up dynamically allocated data array
 		//delete [] data; data = NULL;
 	}
