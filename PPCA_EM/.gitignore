@@ -1,8 +1,8 @@
 /Debug/
 /.settings/
-*.project
-*.settings
-*.cproject
+.project
+.settings
+.cproject
 /include/EMdata.h
 /include/DataStructures.h
 /include/NumericalRecipes.h
