@@ -1,0 +1,41 @@
+CC=g++
+BASEDIR = ..
+SDIR = $(BASEDIR)/src
+SDIR_TEST = $(BASEDIR)/test
+IDIR = $(BASEDIR)/include
+ODIR=$(BASEDIR)/test/objects
+BINDIR=$(BASEDIR)/test/bin
+CFLAGS= -I$(IDIR) #-Wno-write-strings
+MKDIR_P = mkdir -p
+
+_DEPS = NumericalRecipes.h Exceptions.h DataStructures.h
+	DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
+
+_OBJ = NumericalRecipes.o 
+	OBJECTS = $(patsubst %,$(ODIR)/%,$(_OBJ))
+
+_OBJ_TEST = test_NumericalRecipes.o
+	OBJECTS_TEST = $(patsubst %,$(ODIR)/%,$(_OBJ_TEST))
+
+_CPP = NumericalRecipes.cpp
+	SRC = $(patsubst %,$(SDIR)/%,$(_CPP))
+
+_CPP_TEST = test_NumericalRecipes.cpp
+	SRC_TEST = $(patsubst %,$(SDIR_TEST)/%,$(_CPP_TEST))
+
+all: test_NumericalRecipes 
+
+test_NumericalRecipes: $(OBJECTS_TEST) $(OBJECTS)
+	$(CC) $(CFLAGS) -o $@ $^
+ 
+$(OBJECTS_TEST): $(SRC_TEST) $(OBJECTS) $(DEPS) | $(ODIR)
+	$(CC) $(CFLAGS) -c $@ $< $(OBJECTS)
+
+$(OBJECTS): $(SRC) $(DEPS) | $(ODIR) 
+	$(CC) $(CFLAGS) -c $@ $<
+
+#$(ODIR)/%.o: $(SDIR)/%.cpp $(DEPS) | $(ODIR) 
+#	$(CC) $(CFLAGS) -c $@ $<
+
+$(ODIR):
+	$(MKDIR_P) $(ODIR)
