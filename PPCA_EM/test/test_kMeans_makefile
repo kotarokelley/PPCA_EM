@@ -9,24 +9,24 @@ CFLAGS= -I$(IDIR) -fdiagnostics-color=never -Wall -pedantic -g -std=c++11 -stdli
 LIBS = -lopencv_highgui -lopencv_core -lopencv_imgproc -lfftw3f -larmadillo 
 MKDIR_P = mkdir -p
 
-_DEPS = Parser.h PPCA.h class2D.h
+_DEPS = kMeans.h
 	DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
-_OBJ = Parser.o PPCA.o class2D.o 
+_OBJ = kMeans.o
 	OBJECTS = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
-_OBJ_TEST = test_class2D.o
+_OBJ_TEST = test_kMeans.o
 	OBJECTS_TEST = $(patsubst %,$(ODIR)/%,$(_OBJ_TEST))
 
-_CPP =  Parser.cpp PPCA.cpp class2D.cpp
+_CPP =  kMeans.cpp 
 	SRC = $(patsubst %,$(SDIR)/%,$(_CPP))
 
-_CPP_TEST = test_class2D.cpp
+_CPP_TEST = test_kMeans.cpp
 	SRC_TEST = $(patsubst %,$(SDIR_TEST)/%,$(_CPP_TEST))
 
-all: test_class 
+all: test_kMeans 
 
-test_class: $(OBJECTS_TEST) $(OBJECTS) 
+test_kMeans: $(OBJECTS_TEST) $(OBJECTS) 
 	$(CC) $(CFLAGS) $(LIBS) -o $@ $^
  
 $(OBJECTS_TEST): $(SRC_TEST) $(DEPS) | $(ODIR)

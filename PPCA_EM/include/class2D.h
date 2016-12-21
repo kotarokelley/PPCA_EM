@@ -47,6 +47,7 @@ class class2D{
 		//delete [] data; data = NULL;
 	}
 
+
 	/**---Class Constructor---***/
 	class2D(float* f_data, int* f_dim, int f_n_classes);
 	/**
@@ -58,7 +59,7 @@ class class2D{
 	class2D(float* f_data, int* f_dim, int f_n_classes, int f_n_components);
 
 	/**---Class Methods---***/
-    void classify(void);
+    void classify_PPCA_EM(void);
     /** Classify 2D particles by PPCA.
      */
     void tofile(char * f_name);

@@ -19,8 +19,15 @@ class2D::class2D(float* f_data, int* f_dim, int f_n_classes, int f_n_components)
 }
 
 /**---Class Methods---***/
-void class2D::classify(void){
-	//PPCA * pca = new PPCA_Mixture_EM(this->data, this->data_dim);
+void class2D::classify_PPCA_EM(void){
+
+	PPCA* pca = new PPCA_Mixture_EM(this->data, this->data_dim);
+
+
+
+	//std::cout << pca->get_params();
+	 //Clean up.
+	delete pca; pca = NULL;
 
 }
 void class2D::tofile(char * f_name){

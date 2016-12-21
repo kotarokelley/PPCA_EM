@@ -48,7 +48,7 @@ int main(void){
 	cv::Mat img_0(cv::Size(f_dim[0],f_dim[1]),CV_32FC1,f_data_float);
 	cv::namedWindow("image_0",cv::WINDOW_NORMAL);
 	cv::imshow("image_0", img_0);
-	cv::waitKey(2000);									// display for 2 sec
+	cv::waitKey(1000);									// display for 1 sec
 
 	std::cout << "Constructing a class2D object, initialize with data from: " << filename << "\n";
 	class2D classifier = class2D(f_data_float, f_dim, 10);
@@ -82,7 +82,10 @@ int main(void){
 	cv::Mat img_1(cv::Size(f_dim[0],f_dim[1]),CV_32FC1,f_data_float);
 	cv::namedWindow("image_1",cv::WINDOW_NORMAL);
 	cv::imshow("image_1", img_1);
-	cv::waitKey(2000);
+	cv::waitKey(1000);
+
+	std::cout << "Testing method class2D::classify_PPCA_EM.\n";
+	classifier.classify_PPCA_EM();
 
 
 
@@ -99,7 +102,7 @@ int main(void){
 	delete testParser; testParser = NULL;
 	delete f_data; f_data = NULL;
 	delete [] f_data_float; f_data_float = NULL;
-	//delete [] f_dim; f_dim = NULL;
+	delete [] f_data_float_mod; f_data_float_mod = NULL;
 
 
 

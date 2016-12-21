@@ -11,9 +11,12 @@
 /***---Exceptions---***/
 class matrix_compatibility_exception: public std::exception {
 	public:
-		void err_msg(void){
-			printf("Matrix dimensions did not match. Nothing was modified\n");
-		}
-} mat_err;
+		void err_msg(void);
+};
+
+class no_init_exception: public std::exception {
+	public:
+		void err_msg(void);
+};
 
 #endif /* EXCEPTIONS_H_ */

@@ -8,11 +8,18 @@
 #ifndef PPCA_H_
 #define PPCA_H_
 
+#include "kMeans.h"
+#include "Exceptions.h"
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
-#include <armadillo>
+#include <time.h>
 #include <vector>
+#include <tuple>
+#include <math.h>
+#include <armadillo>
+
+
 //#include "NumericalRecipes.h"
 
 //using namespace std;
@@ -23,42 +30,58 @@ class PPCA {
 	 * from "Mixtures of Probabilistic Principal Component Analysers," Tipping and Bishop 1999.
 	 *
      *	Class Members:
+     *		n_obs: int
+     *			Number of observations.
+     *		n_var: int
+     *			Number of variables for each observation.
      *		n_components: int
      *			Number of components to keep. If n_components is not set, all
      *			components are kept.
-     *		components_: array of fmat
+     *		components_: array of mat
      *			Principal axes in feature space, representing the directions of maximum
      *			variance in the data.
-     *		explained_variance_ratio_: array of floats
+     *		explained_variance_ratio_: array of doubles
      *			Percentage of variance explained by each of the selected components.
      *			Basically eigenvalues normalized by n_components.
      *			Dynamically allocated after calling function fit. Released by deconstructor.
-     *		mean_: array of frowvec
+     *		mean_: mat
      *			Per feature empirical mean, estimated from the training set.
-     *		noise_variance_: array of frowvec
+     *		noise_var: vector of doubles
      *			Estimated noise variance.
-     *		noise_variance_model: array of frowvec
+     *		noise_var_model: vector of doubles
      *			Estimated noise variance for model.
-     *		data: fmat
-     *			Input data
+     *		data: mat
+     *			Input data. Assumes the following format: columns of samples, rows of data points.
      *	Class Methods:
      *
      *		fit:
      *			Fit the data to the model.
      *		fit_transform:
      *			Fit the data and apply the dimensionality reduction on data. TODO >>> Decide if passed in data is modified.
-     *		get_covariance:
-     *			Get covariance of data.
-     *		get_covariance_model:
-     *			Get covariance of model.
      *		get_params:
      *			Get parameters for this estimator.
+     *		get_n_components_
+     *			Get how many components we are keeping.
+     *		n_models: int
+     *			Number of PCA models.
+     *		get_components:
+     *			Get a copy of components_
+     *		get_mean:
+     *			Get mean parameters.
+     *		get_noise_variance:
+     *			Get estimates for the noise variance of the data.
+     *		get_noise_variance_model:
+     *			Get estimates for the noise variances of the model.
+     *
 	 */
 
 	public:
 		virtual ~ PPCA() {		// clean up dynamically allocated data array
 
 		}
+		/**---Constructors---**/
+
+		PPCA(mat f_data, int* f_dim, int f_n_components, int f_n_models);
 
 		/**---Class Methods---***/
 
@@ -66,46 +89,52 @@ class PPCA {
 			/** Top level function called to perform PCA analysis.
 			 *
 			 */
-	    virtual char * get_params(void) = 0;
+		virtual std::tuple<int, int, int, int> get_params(void) = 0;
 			/**	Arguments:
 			 * 		void
 			 * 	Returns:
-			 * 		String representing the parameters for this model.
+			 * 		Tuple representing the parameters for this model.
+			 * 			Rows, Cols, n_components, n_models.
 			 */
 	    virtual int get_n_components(void) = 0;
 			/** Return a copy of n_componentes.
 			 */
-	    virtual std::vector<fmat> get_components_(void) = 0;
-	    	/** Return a copy of componentes_.
+	    virtual std::vector<mat> get_components_(void) = 0;
+	    	/** Return a copy of components_.
 	    	 */
-	    virtual std::vector<frowvec> get_explained_variance_ratio(void) = 0;
-    		/** Return a copy of explained_variance_ratio.
-    		 */
-	    virtual std::vector<frowvec> get_mean(void) = 0;
+	    virtual mat get_mean(void) = 0;
     		/** Return a copy of mean
     		 */
-	    virtual std::vector<frowvec> get_noise_variance(void) = 0;
+	    virtual std::vector<double> get_noise_variance(void) = 0;
     		/** Return a copy of noise_variance
     		 */
-	    virtual std::vector<frowvec> get_noise_variance_moedl(void) = 0;
+	    //virtual std::vector<float> get_noise_variance_model(void) = 0;
     		/** Return a copy of noise_variance_model
     		 */
 
 		/** Class Members **/
-	protected:
+
+	    //int dim[2];
+
+	    int n_obs;
+
+	    int n_var;
+
 		int n_components;
 
-		std::vector<fmat> components_;
+		int n_models;
 
-		std::vector<frowvec> explained_variance_ratio;
+		std::vector<mat> components_;
 
-		std::vector<frowvec> mean;
+		std::vector<rowvec> explained_variance_ratio;
 
-		std::vector<frowvec> noise_variance;
+		mat mean;
 
-		std::vector<frowvec> noise_variance_model;
+		std::vector<double> noise_var;
 
-		fmat data;
+		//std::vector<float> noise_var_model;
+
+		mat data;
 
 };
 
@@ -119,101 +148,153 @@ class PPCA_Mixture_EM: public PPCA {
      *		optimize:
      *			Execute EM algorithm.
      *	Class Members:
-     *		n_models: int
-     *			Number of PCA models.
-     *		mix_frac_array: array of floats
+     *		n_iter: int
+     *			Number of iterations so far.
+     *		max_iter: int
+     *			Maximum number of iterations.
+     *		mixfrac: vector of floats
      *			Mixing fraction of each PCA model.
-     *		W_mat_array: array of Mat
+     *		Rni: fmat
+     *			Posterior responsibility of mixture i for generating data point tn.
+     *		W_mat_vector: vector of Mat
      *			Local covariance matrix for each model.
-     *		Si_mat_array: array of Mat; each matrix represented as 1-D array
+     *		Si_mat_vector: vector of Mat; each matrix represented as 1-D array
      *			Local responsibility weighted covariance matrices for each model.
+     *		has_init: int
+     *			Flag set to 1 if initialization of all parameters before executing EM. Otherwise 0.
+     *
      **/
 	public:
 		/**---Destructor---**/
 		~ PPCA_Mixture_EM() {		// clean up dynamically allocated data array
-			delete [] mixfrac; mixfrac = NULL;
-			delete [] Rni; Rni = NULL;
-			delete [] Rn; Rn = NULL;
+			//delete [] mixfrac; mixfrac = NULL;
+
 		}
+
 		/**---Constructors---**/
-		PPCA_Mixture_EM(fmat f_data, int* f_dim);
+
+		//PPCA_Mixture_EM(fmat f_data, int* f_dim);
 			/**	Single model, keep all components.
 			 */
-		PPCA_Mixture_EM(fmat f_data, int* f_dim, int f_n_components);
+		//PPCA_Mixture_EM(fmat f_data, int* f_dim, int f_n_components);
 			/**	Single model, keep only largest components.
 			 */
-		PPCA_Mixture_EM(fmat f_data, int* f_dim, int f_n_components, int f_n_models);
+
+		PPCA_Mixture_EM(mat f_data, int* f_dim, int f_n_components, int f_n_models);
 			/**	Multiple models, keep only largest components.
 			 */
+
 		/**---Class Methods---***/
 
 		void fit(void);
 
-	    char * get_params(void);
-			/**	Arguments:
-			 * 		void
-			 * 	Returns:
-			 * 		String representing the parameters for this model.
-			 **/
-		int get_n_components(void) = 0;
+		std::tuple<int, int, int, int> get_params(void);
+		/**	Arguments:
+		 * 		void
+		 * 	Returns:
+		 * 		Tuple representing the parameters for this model.
+		 * 			Rows, Cols, n_components, n_models.
+		 */
+		int get_n_components(void);
 			/** Return a copy of n_componentes.
 			 */
-		std::vector<fmat> get_components_(void) = 0;
+		std::vector<mat> get_components_(void);
 			/** Return a copy of componentes_.
 			 */
-		std::vector<frowvec> get_explained_variance_ratio(void) = 0;
+		std::vector<rowvec> get_explained_variance_ratio(void);
 			/** Return a copy of explained_variance_ratio.
 			 */
-		std::vector<frowvec> get_mean(void) = 0;
+		mat get_mean(void);
 			/** Return a copy of mean
 			 */
-		std::vector<frowvec> get_noise_variance(void) = 0;
+		std::vector<double> get_noise_variance(void);
 			/** Return a copy of noise_variance
 			 */
-		std::vector<frowvec> get_noise_variance_moedl(void) = 0;
+		//std::vector<float> get_noise_variance_model(void);
 			/** Return a copy of noise_variance_model
 			 */
-
-		void initialize_random(void);
-			/** Find initial values for mixing fraction pi and mean mu for each model by initial clustering of data.
+		void initialize_uniform(void);
+			/** Find initial values for posterior responsibility of mixture i,
+			 * 		Rni=p(i|tn) for each model by assigning uniform value of 1/n_models.
 			 *	Arguments:
 			 *		void
 			 *	Returns:
 			 *		void
 			 */
-		void optimize(float threshold);
+		void initialize_random(void);
+			/** Find initial values for posterior responsibility of mixture i,
+			 * 		Rni=p(i|tn) for each model by random clustering of data.
+			 *	Arguments:
+			 *		void
+			 *	Returns:
+			 *		void
+			 */
+		void initialize_kmeans(void);
+			/** Find initial values for posterior responsibility of mixture i,
+			 * 		Rni=p(i|tn) for each model by kmeans clustering of data.
+			 * 	Arguments:
+			 * 		void
+			 * 	Returns:
+			 * 		void
+			 */
+		void initialize_helper(void);
+			/*	Excecuted by the various initialize functions above to perform the 0th iteration.
+			 *
+			 *	Arguments:
+			 *		void
+			 *	Returns:
+			 *		void
+			 */
+		void update_Rni(int n);
+			/*	Helper function to calculate the posterior responsibility of model i.			 *
+			 *	Arguments:
+			 *		n: int
+			 *			index for data point
+			 */
+		double calc_Ptn_i(int n, int i);				//TODO this function is missing a constant that drops out in the Rni equation. Fix?
+			/*	Helper function to calculate the marginal distribution of a data point for all models.
+			 *	Arguments:
+			 *		n: int
+			 *			index for data point
+			 *		i: int
+			 *			index for model
+			 */
+		void optimize(int f_max_iter);
 			/** Execute EM algorithm.
 			 *	Arguments:
-			 *		void
+			 *		f_max_iter: int
+			 *			Maximum number of iterations to perform.
 			 *	Returns:
 			 *		void
 			 */
-			/**---Class Members--**/
 
-		int n_components;
+		/**---Class Members--**/
 
-		std::vector<fmat> components_;
+		//int n_components;
 
-		std::vector<frowvec> explained_variance_ratio;
+		//std::vector<fmat> components_;
 
-		std::vector<frowvec> mean;
+		//std::vector<frowvec> explained_variance_ratio;
 
-		std::vector<frowvec> noise_variance;
+		//std::vector<float> mean;
 
-		std::vector<frowvec> noise_variance_model;
+		//std::vector<float> noise_variance;
 
+		//std::vector<float> noise_variance_model;
 
-		int n_models;
+		std::vector<double> mixfrac;
 
-		float * mixfrac;
+		int n_iter;
 
-		float * Rni;
+		mat Rni;
 
-		float * Rn;
+		std::vector<mat> W_mat_vector;
 
-		std::vector<fmat> W_mat_vector;
+		std::vector<mat> Si_mat_vector;
 
-		std::vector<fmat> Si_mat_vector;
+		std::vector<mat> Minv_mat_vector;
+
+		int has_init;
 
 };
 
