@@ -59,8 +59,8 @@ class class2D{
 	class2D(float* f_data, int* f_dim, int f_n_classes, int f_n_components);
 
 	/**---Class Methods---***/
-    void classify_PPCA_EM(void);
-    /** Classify 2D particles by PPCA.
+	void classify_PPCA_EM(double f_trans, double f_trans_rate, double f_ang, double f_ang_rate, int f_max_iter);
+	/** Classify 2D particles by PPCA.
      */
     void tofile(char * f_name);
     /**Output alignment and classification parameters.
