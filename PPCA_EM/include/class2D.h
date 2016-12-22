@@ -35,10 +35,12 @@ class class2D{
 	 *
 
 	 *	Class Methods:
-	 *		classify:
+	 *		classify_PPCA_EM:
 	 *			Classify 2D particles.
+	 *		expland_data_helper:
+	 *			Helper function to sample translated and rotated copies of the original data set.
 	 *		tofile:
-	 *			Output alignment and classification paramters.
+	 *			Output alignment and classification parameters.
 	 **/
 	public:
 
@@ -61,7 +63,31 @@ class class2D{
 	/**---Class Methods---***/
 	void classify_PPCA_EM(double f_trans, double f_trans_rate, double f_ang, double f_ang_rate, int f_max_iter);
 	/** Classify 2D particles by PPCA.
-     */
+	 *	Arguments:
+	 *		f_trans: double
+	 *			Translation range of search.
+	 *		f_trans_rate: double
+	 *			Translation rate of search. Linear interpolation will be used.
+	 *		f_ang: double
+	 *			Angular rotation range of search in degrees.
+	 *		f_ang_rate: double
+	 *			Angular rotation rate of search in degrees.
+	 *		f_max_iter: int
+	 *			Number of iterations of EM to perform on the expanded data set.
+	 **/
+
+	void expand_data_helper(double f_trans, double f_trans_rate, double f_ang, double f_ang_rate);
+	/** Expand data set.
+	 * 	Arguments:
+	 *		f_trans: double
+	 *			Translation range of search.
+	 *		f_trans_rate: double
+	 *			Translation rate of search. Linear interpolation will be used.
+	 *		f_ang: double
+	 *			Angular rotation range of search in degrees.
+	 *		f_ang_rate: double
+	 *			Angular rotation rate of search in degrees.
+	 */
     void tofile(char * f_name);
     /**Output alignment and classification parameters.
      */

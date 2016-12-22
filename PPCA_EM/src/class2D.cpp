@@ -30,6 +30,11 @@ void class2D::classify_PPCA_EM(double f_trans, double f_trans_rate, double f_ang
 	//delete pca; pca = NULL;
 
 }
+
+void class2D::expand_data_helper(double f_trans, double f_trans_rate, double f_ang, double f_ang_rate){
+
+
+}
 void class2D::tofile(char * f_name){
 
 }
