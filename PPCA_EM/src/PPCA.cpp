@@ -226,7 +226,7 @@ void PPCA_Mixture_EM::optimize(int f_max_iter){
 
 		for (int i=0; i<this->n_models; i++){					// Update W mat, noise_var, S mat, and Minv mat last
 
-			mat tempSW_mat(this->n_components,this->n_var,fill::zeros);			//Calculate S*W.
+			mat tempSW_mat(this->n_var, this->n_components,fill::zeros);			//Calculate S*W.
 			for (int n=0; n<this->n_obs; n++){
 				colvec tempvec = this->data.col(n) - this->mean(i);
 				tempSW_mat += this->Rni(n,i) * tempvec * (tempvec.t() * this->W_mat_vector[i]);
