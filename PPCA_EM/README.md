@@ -7,6 +7,7 @@ An implementation of PPCA as derived in Tipping, Bishop, 2006 Neural Computation
 
 ## Motivation
 
+
 Many methods for classifying single particle 2-D electron microscopy images are broken up into two steps. To globally align all particles, a synthetic fiduciary or randomly selected particles from the data set are used as references. This aligned data set is then subject to a classification procedure. As argued in Zhao and Singer 2014 Journal of Structural Biology, this procedure may results in unsatisfactory results whenever there are many different views; owing to the so called "hairy ball theorem". Therefore, a method that avoids the alignment process and directly classifies the particles may be useful. 
 
 ## General Idea of PPCA_EM algorithm
