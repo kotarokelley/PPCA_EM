@@ -15,11 +15,13 @@ PPCA::PPCA(mat f_data, int* f_dim, int f_n_components, int f_n_models):
 
 	n_components(f_n_components), n_models(f_n_models),	// Keep only the largest components.
 
-	components_(f_n_models,mat(f_dim[0],f_n_components)), explained_variance_ratio(f_n_models,rowvec(f_n_components)),
+	//components_(f_n_models,mat(f_dim[0],f_n_components)), explained_variance_ratio(f_n_models,rowvec(f_n_components)),
 
-	mean(f_dim[0],f_n_components,fill::zeros), noise_var(f_n_models,0)//, noise_var_model(f_n_models,0)
+	mean(f_dim[0],f_n_components,fill::zeros)//, noise_var(f_n_models,0)//, noise_var_model(f_n_models,0)
 {
 	data = f_data;
+	data_dim[0] = f_dim[0];
+	data_dim[1] = f_dim[1];
 }
 
 
@@ -36,9 +38,6 @@ PPCA_Mixture_EM::PPCA_Mixture_EM(mat f_data, int* f_dim, int f_n_components, int
 
 }
 
-void PPCA_Mixture_EM::fit(void){
-
-}
 
 std::tuple<int, int, int, int> PPCA_Mixture_EM::get_params(void){
 
@@ -60,6 +59,34 @@ mat PPCA_Mixture_EM::get_mean(void){
 std::vector<double> PPCA_Mixture_EM::get_noise_variance(void){
 	return this->noise_var;
 }
+
+int PPCA_Mixture_EM::write_to_file_Rni(std::string filename){
+	// TODO: for the following write functions, need a standard...
+
+}
+
+int PPCA_Mixture_EM::write_to_file_Wmat(std::string filename){
+
+}
+
+int PPCA_Mixture_EM::write_to_file_mean(std::string filename){ //TODO: we need to get the dimensions of the orignial data
+	try{
+		 mrcParser * testParser = new mrcParser(filename);
+		 float * f_mean = new float[this->data_dim[0]*this->data_dim[1]*this->n_models];
+		 //TODO convert from mat to array.
+		 std::copy(f_data_double, f_data_double + this->data_dim[0]*this->data_dim[1]*this->n_models, f_mean);
+
+		 this->writeData(f_mean, this->data_dim);
+
+		 delete testParser; testParser = NULL;
+		 return 1;
+	}
+	catch (int e){
+		return 0;
+	}
+
+}
+
 
 
 void PPCA_Mixture_EM::initialize_uniform(void){
@@ -115,7 +142,7 @@ void PPCA_Mixture_EM::initialize_kmeans(void){
 
 void PPCA_Mixture_EM::initialize_helper(void){
 	// The initialize functions above only assign values to Rni. From this, the rest of the parameters are updated.
-	for (int i=0; i<this->n_models; i++){			// TODO: Change the limit to this->n_models
+	for (int i=0; i<this->n_models; i++){
 
 		this->mixfrac[i] = 0;								// Initialize model prior probability.
 		for (int n=0; n<this->n_obs; n++){
@@ -134,7 +161,7 @@ void PPCA_Mixture_EM::initialize_helper(void){
 		mat temp_Si(this->n_var,this->n_obs,fill::zeros);									// Initialize Si matrices.
 		for (int n=0; n<this->n_obs; n++){
 			colvec tempvec = this->data.col(n) - this->mean.col(i);
-			temp_Si = this->Rni(n,i)*tempvec*tempvec.t();
+			temp_Si += this->Rni(n,i)*tempvec*tempvec.t();
 			//temp_Si += this->Rni(n,i)*(this->data.col(n) - this->mean.col(i))*(this->data.col(n) - this->mean.col(i)).t();
 		}
 		this->Si_mat_vector[i] = temp_Si/(this->mixfrac[i]*this->n_obs);
@@ -199,7 +226,8 @@ void PPCA_Mixture_EM::optimize(int f_max_iter){
 	if (!this->has_init)									// Throw exception if calling this function before initializing parameters.
 		throw no_init_exception();
 
-	while (!(this->n_iter <= f_max_iter)){
+	while (this->n_iter <= f_max_iter){
+
 
 		for (int n=0; n<this->n_obs; n++){						// Update Rni first.
 			this->update_Rni(n);
@@ -226,7 +254,7 @@ void PPCA_Mixture_EM::optimize(int f_max_iter){
 
 		for (int i=0; i<this->n_models; i++){					// Update W mat, noise_var, S mat, and Minv mat last
 
-			mat tempSW_mat(this->n_var, this->n_components,fill::zeros);			//Calculate S*W.
+			mat tempSW_mat(this->n_var,this->n_components,fill::zeros);			//Calculate S*W.
 			for (int n=0; n<this->n_obs; n++){
 				colvec tempvec = this->data.col(n) - this->mean(i);
 				tempSW_mat += this->Rni(n,i) * tempvec * (tempvec.t() * this->W_mat_vector[i]);
@@ -250,7 +278,7 @@ void PPCA_Mixture_EM::optimize(int f_max_iter){
 			this->Si_mat_vector[i] = temp_Si/(this->mixfrac[i]*this->n_obs);
 
 			mat tempM = eye<mat>(this->n_components,this->n_components);
-			this->Minv_mat_vector[i] = this->noise_var[i]*(inv(this->noise_var[i]*eye<mat>(this->n_components, 		// Initialize Minv matrices.
+			this->Minv_mat_vector[i] = this->noise_var[i]*(inv(this->noise_var[i]*eye<mat>(this->n_components, 		// Update Minv matrices.
 					this->n_components) + this->W_mat_vector[i].t()*this->W_mat_vector[i]));
 
 

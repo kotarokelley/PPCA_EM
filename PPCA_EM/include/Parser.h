@@ -7,10 +7,13 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <iostream>
+
 
 class Parser{
 	public:
 		virtual ~ Parser(){
+
 		}
 		/*---get entire header---*/
 		virtual char * getHdr(void) = 0;
@@ -28,7 +31,7 @@ class Parser{
 		
 		virtual float * getPixelWidth(void) = 0;
 		
-	protected:
+	public:
 		char  					* fileName;
 		FILE  					* Input;
 		unsigned long			fileSize;
@@ -38,8 +41,12 @@ class Parser{
 class mrcParser: public Parser{
 	
 public:
+	~ mrcParser(){
+		if (this->bmpInput!=NULL)
+			fclose(this->bmpInput);
+	}
 	/*---parse mrc format binary files---*/	
-	mrcParser(char * inputFile);
+	mrcParser(char * inputFile, int read=1);	// default read file. Otherwise, write.
 	/*---return pointer to header of file, which is assumed to be 1024 bytes long---*/
 	char * getHdr(void);
 	
@@ -55,7 +62,11 @@ public:
 	
 	float * getPixelWidth(void);
 	
-private:	
+	void writeHdr();
+
+	void writeData(float * in_data, int * in_dim);
+
+public:
 	
 	FILE  					* bmpInput;
 	int32_t 				num[3];

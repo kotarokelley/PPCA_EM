@@ -54,10 +54,6 @@ class PPCA {
      *			Input data. Assumes the following format: columns of samples, rows of data points.
      *	Class Methods:
      *
-     *		fit:
-     *			Fit the data to the model.
-     *		fit_transform:
-     *			Fit the data and apply the dimensionality reduction on data. TODO >>> Decide if passed in data is modified.
      *		get_params:
      *			Get parameters for this estimator.
      *		get_n_components_
@@ -85,10 +81,6 @@ class PPCA {
 
 		/**---Class Methods---***/
 
-		virtual void fit(void) = 0;
-			/** Top level function called to perform PCA analysis.
-			 *
-			 */
 		virtual std::tuple<int, int, int, int> get_params(void) = 0;
 			/**	Arguments:
 			 * 		void
@@ -97,7 +89,7 @@ class PPCA {
 			 * 			Rows, Cols, n_components, n_models.
 			 */
 	    virtual int get_n_components(void) = 0;
-			/** Return a copy of n_componentes.
+			/** Return a copy of n_components.
 			 */
 	    virtual std::vector<mat> get_components_(void) = 0;
 	    	/** Return a copy of components_.
@@ -108,6 +100,7 @@ class PPCA {
 	    virtual std::vector<double> get_noise_variance(void) = 0;
     		/** Return a copy of noise_variance
     		 */
+
 	    //virtual std::vector<float> get_noise_variance_model(void) = 0;
     		/** Return a copy of noise_variance_model
     		 */
@@ -124,17 +117,17 @@ class PPCA {
 
 		int n_models;
 
-		std::vector<mat> components_;
+		//std::vector<mat> components_;
 
-		std::vector<rowvec> explained_variance_ratio;
+		//std::vector<rowvec> explained_variance_ratio;
 
 		mat mean;
 
-		std::vector<double> noise_var;
-
-		//std::vector<float> noise_var_model;
+		//std::vector<double> noise_var;
 
 		mat data;
+
+		int * data_dim[2];
 
 };
 
@@ -183,10 +176,12 @@ class PPCA_Mixture_EM: public PPCA {
 		PPCA_Mixture_EM(mat f_data, int* f_dim, int f_n_components, int f_n_models);
 			/**	Multiple models, keep only largest components.
 			 */
+		PPCA_Mixture_EM(mat f_data, int*f_dim, int f_n_components, int f_n_models,
+				mat r_mean, std::vector<double> r_mixfrac, mat r_Rni, std::vector<mat> r_W_mat_vector,
+				std::vector<mat> r_Si_mat_vector,
+				);
 
 		/**---Class Methods---***/
-
-		void fit(void);
 
 		std::tuple<int, int, int, int> get_params(void);
 		/**	Arguments:
@@ -196,7 +191,7 @@ class PPCA_Mixture_EM: public PPCA {
 		 * 			Rows, Cols, n_components, n_models.
 		 */
 		int get_n_components(void);
-			/** Return a copy of n_componentes.
+			/** Return a copy of n_components.
 			 */
 		std::vector<mat> get_components_(void);
 			/** Return a copy of componentes_.
@@ -210,9 +205,15 @@ class PPCA_Mixture_EM: public PPCA {
 		std::vector<double> get_noise_variance(void);
 			/** Return a copy of noise_variance
 			 */
-		//std::vector<float> get_noise_variance_model(void);
-			/** Return a copy of noise_variance_model
-			 */
+		int write_to_file_Rni(std::string filename);  // TODO: for the following write functions, need a standard..
+	    	/** Write to file Rni.
+	    	 */
+	    int write_to_file_Wmat(std::string filename);
+	    	/** Write to file Wmat.
+	    	 */
+	    int write_to_file_mean(std::string filename);
+    	/** Write to file mean images as an mrc file.
+    	 */
 		void initialize_uniform(void);
 			/** Find initial values for posterior responsibility of mixture i,
 			 * 		Rni=p(i|tn) for each model by assigning uniform value of 1/n_models.
@@ -269,18 +270,6 @@ class PPCA_Mixture_EM: public PPCA {
 			 */
 
 		/**---Class Members--**/
-
-		//int n_components;
-
-		//std::vector<fmat> components_;
-
-		//std::vector<frowvec> explained_variance_ratio;
-
-		//std::vector<float> mean;
-
-		//std::vector<float> noise_variance;
-
-		//std::vector<float> noise_variance_model;
 
 		std::vector<double> mixfrac;
 

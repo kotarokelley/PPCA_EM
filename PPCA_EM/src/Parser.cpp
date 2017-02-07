@@ -8,25 +8,35 @@
 #include "Parser.h"
 
 /*---constructor----*/
-mrcParser::mrcParser(char * inputFile){
-	fileName = inputFile;					// INPUT FILE NAME
-	bmpInput = fopen(fileName, "rb");		// OPEN FILE
-	if(bmpInput == NULL){
-		printf("Could not open file: %s", fileName);
-		exit (1);
+mrcParser::mrcParser(char * inputFile, int read){	// default read file. Otherwise, write.
+	fileName = inputFile;						// INPUT FILE NAME
+	if (read){									// Read mode.
+		bmpInput = fopen(fileName, "rb");		// OPEN FILE
+		if(bmpInput == NULL){
+			printf("Could not open file: %s", fileName);
+			exit (1);
+		}
+		fseek(bmpInput, 0, SEEK_END);			// SET POINTER TO END OF FILE
+		fileSize = ftell (bmpInput);			// GET TOTAL FILE SIZE IN BYTES
+		fseek(bmpInput, 0, SEEK_SET);		    // SET POINTER TO BEGINNING OF FILE
 	}
-	fseek(bmpInput, 0, SEEK_END);			// SET POINTER TO END OF FILE
-	fileSize = ftell (bmpInput);			// GET TOTAL FILE SIZE IN BYTES
-	fseek(bmpInput, 0, SEEK_SET);		    // SET POINTER TO BEGINNING OF FILE
+	else{										// Write mode.
+		bmpInput = fopen(fileName, "w");
+		if(bmpInput == NULL){
+			printf("Could not open file: %s", fileName);
+			exit (1);
+		}
+	}
 }
 /*---get entire header---*/
 char * mrcParser::getHdr(void){						// READ HEADER AND ASSIGN TO HEADER VARIABLE
 	fseek(bmpInput, 0, SEEK_SET);
-	char * header;
-	header = (char*) malloc(1024); 		// ALLOCATE 1024 BYTES FOR THE HEADER
+	char * header = new char[1024];
+	//header = (char*) malloc(1024); 		// ALLOCATE 1024 BYTES FOR THE HEADER
 	fread(header, 1024, 1, bmpInput);
 	return header;
 }
+
 /*---parse the header---*/
 void mrcParser::parseHdr(void){
 	fseek(bmpInput, 0, SEEK_SET);
@@ -110,9 +120,64 @@ char * mrcParser::getData(bool verbose){
 	char * data = new char[dataSize];				// ALLOCATE MEMORY FOR DATA BY DYNAMIC DECLARATION
 	fseek(bmpInput, dataOffset, SEEK_SET);			// SHIFT POSITION TO START OF DATA
 	fread(data,sizeof(char),dataSize,bmpInput);		// READ IN DATA
-	fclose(bmpInput);								// DONE GETTING DATA CLOSE OUT FILE
+	//fclose(bmpInput);								// DONE GETTING DATA CLOSE OUT FILE
 	return data;
 }
+
+void mrcParser::writeHdr(){
+
+	fseek(bmpInput, 0, SEEK_SET);
+	fwrite(num,sizeof(num),1,bmpInput);
+	fwrite(&pixelType,sizeof(pixelType),1,bmpInput);
+	fwrite(mst,sizeof(mst),1,bmpInput);
+	fwrite(m,sizeof(m),1,bmpInput);
+	fwrite(d,sizeof(d),1,bmpInput);
+	fwrite(angle,sizeof(angle),1,bmpInput);
+	fwrite(axis,sizeof(axis),1,bmpInput);
+	fwrite(mmm1,sizeof(mmm1),1,bmpInput);
+	fwrite(&type,sizeof(type),1,bmpInput);
+	fwrite(&nspg,sizeof(nspg),1,bmpInput);
+	fwrite(&next,sizeof(next),1,bmpInput);
+	fwrite(&dvid,sizeof(dvid),1,bmpInput);
+	fwrite(&nblank,sizeof(nblank),1,bmpInput);
+	fwrite(&ntst,sizeof(ntst),1,bmpInput);
+	fwrite(extra,sizeof(extra),1,bmpInput);
+	fwrite(&NumIntegers,sizeof(NumIntegers),1,bmpInput);
+	fwrite(&NumFloats,sizeof(NumFloats),1,bmpInput);
+	fwrite(&sub,sizeof(sub),1,bmpInput);
+	fwrite(&zfac,sizeof(zfac),1,bmpInput);
+	fwrite(mm2,sizeof(mm2),1,bmpInput);
+	fwrite(mm3,sizeof(mm3),1,bmpInput);
+	fwrite(mm4,sizeof(mm4),1,bmpInput);
+	fwrite(&ImageType,sizeof(ImageType),1,bmpInput);
+	fwrite(&LensNum,sizeof(LensNum),1,bmpInput);
+	fwrite(&n1,sizeof(n1),1,bmpInput);
+	fwrite(&n2,sizeof(n2),1,bmpInput);
+	fwrite(&v1,sizeof(v1),1,bmpInput);
+	fwrite(&v2,sizeof(v2),1,bmpInput);
+	fwrite(mm5,sizeof(mm5),1,bmpInput);
+	fwrite(&NumTimes,sizeof(NumTimes),1,bmpInput);
+	fwrite(&ImgSequence,sizeof(ImgSequence),1,bmpInput);
+	fwrite(tilt,sizeof(tilt),1,bmpInput);
+	fwrite(&NumWaves,sizeof(NumWaves),1,bmpInput);
+	fwrite(wave,sizeof(wave),1,bmpInput);
+	fwrite(zxy0,sizeof(zxy0),1,bmpInput);
+	fwrite(&NumTitles,sizeof(NumTitles),1,bmpInput);
+}
+/***---write data to mrc file---***/
+void mrcParser::writeData(float * in_data, int * in_dim){
+	unsigned long dataOffset = 1024+next;
+
+	this->num[0] = in_dim[0];
+	this->num[1] = in_dim[1];
+	this->num[2] = in_dim[2];
+	this->pixelType = 2;
+
+	fseek(bmpInput, dataOffset, SEEK_SET);			// SHIFT POSITION TO START OF DATA
+	fwrite(in_data,sizeof(float), num[0]*num[1]*num[2],bmpInput);		// READ IN DATA
+
+}
+
 /***---get dimensions of image stack---***/
 int * mrcParser::getDim(void){
 	return num;

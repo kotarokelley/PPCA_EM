@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctime>
 #include "opencv2/core/core.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/highgui.hpp"
@@ -23,6 +24,8 @@ int main(void){
 	Parser * testParser = new mrcParser(filename);  // input binary data
 
 	char * f_data = testParser->getData(false);			// extract data, verbose off
+
+	char * f_header = testParser->getHdr();
 
 	int * f_dim = testParser->getDim();					// get dimension of image stack
 
@@ -40,7 +43,7 @@ int main(void){
 	std::cout << f_dim[2] << "\n";
 
 	std::cout << "Casting data array to double array.\n";
-	double * f_data_double = new double[f_dim[0]*f_dim[1]*f_dim[2]];		// convert data to float.
+	double * f_data_double = new double[f_dim[0]*f_dim[1]*f_dim[2]];		// convert data to d.
 	std::memcpy(f_data_double, f_data, sizeof(double)*f_dim[0]*f_dim[1]*f_dim[2]);
 
 	std::cout << "Constructing a PPCA_Mixture_EM object, initialize with data from: " << filename << "\n";
@@ -50,7 +53,7 @@ int main(void){
 	int f_dim_2 [2];
 	f_dim_2[0] = f_dim[0]*f_dim[1]; f_dim_2[1] = f_dim[2];
 
-	PPCA_Mixture_EM * pca = new PPCA_Mixture_EM( f_data_mat, f_dim_2, 2, 2);
+	PPCA_Mixture_EM * pca = new PPCA_Mixture_EM( f_data_mat, f_dim_2, 10, 10);
 
 	std::cout << "Checking that data did not get altered by passing to PPCA_Mixture_EM constructor.\n";
 	int n_rows = pca->data.n_rows;
@@ -72,9 +75,16 @@ int main(void){
 	else
 		std::cout << "Data has been augmented.\n\n";
 
+	std::clock_t start, stop;
+	double elapsed;
+
 	std::cout << "Testing function initialize_uniform.\n";
+	start = std::clock();
 
 	pca->initialize_uniform();
+	stop = std:: clock();
+	elapsed = (stop-start)/(double)CLOCKS_PER_SEC;     //(double(stop-start))/CLOCKS_PER_SEC;
+	std::cout << "Function initialize_uniform took: " << elapsed << " s\n\n";
 
 	std::cout << "Displaying the values of Rni for the first image.\n";
 	for (int i=0; i<pca->n_models; i++)
@@ -93,8 +103,12 @@ int main(void){
 		std::cout << "Probabilities Rni for first images did not sum to 1.\n" << "Summed to: " << total << "\nNoPass\n\n";
 
 	std::cout << "Testing function initialize_random.\n";
+	start = std::clock();
 
 	pca->initialize_random();
+	stop = std::clock();
+	elapsed = (double(stop-start))/CLOCKS_PER_SEC;
+	std::cout << "Function initialize_random took: " << elapsed << " s\n\n";
 
 	std::cout << "Displaying the values of Rni for the first image.\n";
 	for (int i=0; i<pca->n_models; i++){
@@ -118,8 +132,14 @@ int main(void){
 
 
 
-	//std::cout << "Performing one round of optimizations.\n";
-	//pca->optimize(1);
+	std::cout << "Performing one round of optimizations.\n";
+	start = std::clock();
+
+	pca->optimize(1);
+	stop = std::clock();
+	elapsed = (double(stop-start))/CLOCKS_PER_SEC;
+	std::cout << "Function optimize took: " << elapsed << " s\n\n";
+	std::cout << "Writing to file Rni\n";
 
 
 
@@ -134,6 +154,7 @@ int main(void){
 	delete pca; pca = NULL;
 
 }
+
 
 
 
