@@ -123,7 +123,7 @@ class PPCA {
 
 		mat mean;
 
-		//std::vector<double> noise_var;
+		std::vector<double> noise_var;
 
 		mat data;
 

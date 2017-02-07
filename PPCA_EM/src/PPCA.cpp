@@ -17,7 +17,7 @@ PPCA::PPCA(mat f_data, int* f_dim, int f_n_components, int f_n_models):
 
 	//components_(f_n_models,mat(f_dim[0],f_n_components)), explained_variance_ratio(f_n_models,rowvec(f_n_components)),
 
-	mean(f_dim[0],f_n_components,fill::zeros)//, noise_var(f_n_models,0)//, noise_var_model(f_n_models,0)
+	mean(f_dim[0],f_n_components,fill::zeros), noise_var(f_n_models,0)//, noise_var_model(f_n_models,0)
 {
 	data = f_data;
 	data_dim[0] = f_dim[0];
@@ -71,14 +71,14 @@ int PPCA_Mixture_EM::write_to_file_Wmat(std::string filename){
 
 int PPCA_Mixture_EM::write_to_file_mean(std::string filename){ //TODO: we need to get the dimensions of the orignial data
 	try{
-		 mrcParser * testParser = new mrcParser(filename);
+		 mrcParser * writeParser = new mrcParser(filename);
 		 float * f_mean = new float[this->data_dim[0]*this->data_dim[1]*this->n_models];
 		 //TODO convert from mat to array.
 		 std::copy(f_data_double, f_data_double + this->data_dim[0]*this->data_dim[1]*this->n_models, f_mean);
 
-		 this->writeData(f_mean, this->data_dim);
+		 writeParser->writeData(f_mean, this->data_dim);
 
-		 delete testParser; testParser = NULL;
+		 delete writeParser; writeParser = NULL;
 		 return 1;
 	}
 	catch (int e){
