@@ -22,6 +22,7 @@ PPCA::PPCA(mat f_data, int* f_dim, int f_n_components, int f_n_models):
 	data = f_data;
 	data_dim[0] = f_dim[0];
 	data_dim[1] = f_dim[1];
+
 }
 
 
