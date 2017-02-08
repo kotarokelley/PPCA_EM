@@ -81,7 +81,7 @@ class PPCA {
 
 		/**---Class Methods---***/
 
-		virtual std::tuple<int, int, int, int> get_params(void) = 0;
+		//virtual std::tuple<int, int, int, int> get_params(void) = 0;
 			/**	Arguments:
 			 * 		void
 			 * 	Returns:
@@ -91,7 +91,7 @@ class PPCA {
 	    virtual int get_n_components(void) = 0;
 			/** Return a copy of n_components.
 			 */
-	    virtual std::vector<mat> get_components_(void) = 0;
+	    //virtual std::vector<mat> get_components_(void) = 0;
 	    	/** Return a copy of components_.
 	    	 */
 	    virtual mat get_mean(void) = 0;
@@ -100,7 +100,9 @@ class PPCA {
 	    virtual std::vector<double> get_noise_variance(void) = 0;
     		/** Return a copy of noise_variance
     		 */
-
+	    virtual std::vector<int> get_data_dim(void) = 0;
+	    	/** Return the dimensions of the indivisual images. xpix, ypix
+	    	 */
 	    //virtual std::vector<float> get_noise_variance_model(void) = 0;
     		/** Return a copy of noise_variance_model
     		 */
@@ -127,7 +129,7 @@ class PPCA {
 
 		mat data;
 
-		int * data_dim[2];
+		std::vector<int> data_dim;
 
 };
 
@@ -166,21 +168,14 @@ class PPCA_Mixture_EM: public PPCA {
 
 		/**---Constructors---**/
 
-		//PPCA_Mixture_EM(fmat f_data, int* f_dim);
-			/**	Single model, keep all components.
-			 */
-		//PPCA_Mixture_EM(fmat f_data, int* f_dim, int f_n_components);
-			/**	Single model, keep only largest components.
-			 */
-
 		PPCA_Mixture_EM(mat f_data, int* f_dim, int f_n_components, int f_n_models);
 			/**	Multiple models, keep only largest components.
 			 */
 		PPCA_Mixture_EM(mat f_data, int*f_dim, int f_n_components, int f_n_models,
-				mat r_mean, std::vector<double> r_mixfrac, mat r_Rni, std::vector<mat> r_W_mat_vector,
-				std::vector<mat> r_Si_mat_vector,
-				);
-
+				mat r_mean, std::vector<double> r_noise_var, std::vector<double> r_mixfrac, mat r_Rni, std::vector<mat> r_W_mat_vector,
+				std::vector<mat> r_Si_mat_vector, std::vector<mat> r_Minv_mat_vector);
+			/** Use this constructor if starting from a previous job.
+			 */
 		/**---Class Methods---***/
 
 		std::tuple<int, int, int, int> get_params(void);
@@ -193,10 +188,10 @@ class PPCA_Mixture_EM: public PPCA {
 		int get_n_components(void);
 			/** Return a copy of n_components.
 			 */
-		std::vector<mat> get_components_(void);
+		//std::vector<mat> get_components_(void);
 			/** Return a copy of componentes_.
 			 */
-		std::vector<rowvec> get_explained_variance_ratio(void);
+		//std::vector<rowvec> get_explained_variance_ratio(void);
 			/** Return a copy of explained_variance_ratio.
 			 */
 		mat get_mean(void);
@@ -205,6 +200,9 @@ class PPCA_Mixture_EM: public PPCA {
 		std::vector<double> get_noise_variance(void);
 			/** Return a copy of noise_variance
 			 */
+		std::vector<int> get_data_dim(void);
+    	/** Return the dimensions of the indivisual images. xpix, ypix
+    	 */
 		int write_to_file_Rni(std::string filename);  // TODO: for the following write functions, need a standard..
 	    	/** Write to file Rni.
 	    	 */

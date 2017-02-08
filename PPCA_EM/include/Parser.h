@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
+#include <vector>
 
 
 class Parser{
@@ -25,11 +26,11 @@ class Parser{
 		
 		virtual char * getData(bool verbose = false) = 0;
 		
-		virtual int32_t * getDim(void) = 0;
+		virtual std::vector<int> getDim(void) = 0;
 		
 		virtual int32_t getPixelType(void) = 0;
 		
-		virtual float * getPixelWidth(void) = 0;
+		virtual std::vector<float> getPixelWidth(void) = 0;
 		
 	public:
 		char  					* fileName;
@@ -56,15 +57,15 @@ public:
 	
 	char * getData(bool verbose=false);
 		
-	int * getDim(void);				
+	std::vector<int> getDim(void);
 	
 	int getPixelType(void);	
 	
-	float * getPixelWidth(void);
+	std::vector<float> getPixelWidth(void);
 	
 	void writeHdr();
 
-	void writeData(float * in_data, int * in_dim);
+	void writeData(float * in_data, std::vector<int> in_dim);
 
 public:
 	

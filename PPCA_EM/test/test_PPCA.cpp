@@ -27,7 +27,7 @@ int main(void){
 
 	char * f_header = testParser->getHdr();
 
-	int * f_dim = testParser->getDim();					// get dimension of image stack
+	int * f_dim = testParser->getDim();					// get dimension of image stack TODO, this needs to be fixed since when testParser goes out of scope, f_dim will go out of scope.
 
 	int f_pixelType = testParser->getPixelType();		// get pixel type
 
@@ -150,6 +150,7 @@ int main(void){
 	// cleanup
 	delete testParser; testParser = NULL;
 	delete f_data; f_data = NULL;
+	delete f_header; f_header = NULL;
 	delete [] f_data_double; f_data_double = NULL;
 	delete pca; pca = NULL;
 

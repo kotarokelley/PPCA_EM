@@ -2,9 +2,7 @@
  * mrcParser created by Kotaro Kelley 150820
  * implements a parser class with several subclasses to read various input files
  */
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
+
 #include "Parser.h"
 
 /*---constructor----*/
@@ -165,29 +163,32 @@ void mrcParser::writeHdr(){
 	fwrite(&NumTitles,sizeof(NumTitles),1,bmpInput);
 }
 /***---write data to mrc file---***/
-void mrcParser::writeData(float * in_data, int * in_dim){
+void mrcParser::writeData(float * in_data, std::vector<int> in_dim){
 	unsigned long dataOffset = 1024+next;
 
-	this->num[0] = in_dim[0];
-	this->num[1] = in_dim[1];
-	this->num[2] = in_dim[2];
-	this->pixelType = 2;
-
+	num[0] = in_dim[0];
+	num[1] = in_dim[1];
+	num[2] = in_dim[2];
+	pixelType = 2;
+	writeHdr();
 	fseek(bmpInput, dataOffset, SEEK_SET);			// SHIFT POSITION TO START OF DATA
 	fwrite(in_data,sizeof(float), num[0]*num[1]*num[2],bmpInput);		// READ IN DATA
-
+	fclose(bmpInput);
 }
 
 /***---get dimensions of image stack---***/
-int * mrcParser::getDim(void){
-	return num;
+std::vector<int> mrcParser::getDim(void){
+	//return num;								//TODO this needs to return a vector instead.
+	std::vector<int> temp(num, num+3);
+	return temp;
 }
 /***---get pixel type of image stack---***/
 int mrcParser::getPixelType(void){
 	return pixelType;
 }
 /**---get pixel size in um---*/
-float * mrcParser::getPixelWidth(void){
-	return d;
+std::vector<float> mrcParser::getPixelWidth(void){
+	std::vector<float> temp(d, d+3);
+	return temp;
 }
 

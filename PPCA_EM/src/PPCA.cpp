@@ -17,10 +17,10 @@ PPCA::PPCA(mat f_data, int* f_dim, int f_n_components, int f_n_models):
 
 	//components_(f_n_models,mat(f_dim[0],f_n_components)), explained_variance_ratio(f_n_models,rowvec(f_n_components)),
 
-	mean(f_dim[0],f_n_components,fill::zeros), noise_var(f_n_models,0)//, noise_var_model(f_n_models,0)
+	mean(f_dim[0],f_n_components,fill::zeros), noise_var(f_n_models,0), data_dim(2)//, noise_var_model(f_n_models,0)
 {
 	data = f_data;
-	data_dim[0] = f_dim[0];
+	data_dim[0] = f_dim[0];			// This is kind of clunky. Should we do data_dim.push_back()?
 	data_dim[1] = f_dim[1];
 
 }
@@ -39,20 +39,38 @@ PPCA_Mixture_EM::PPCA_Mixture_EM(mat f_data, int* f_dim, int f_n_components, int
 
 }
 
+PPCA_Mixture_EM::PPCA_Mixture_EM(mat f_data, int*f_dim, int f_n_components, int f_n_models,
+		mat r_mean, std::vector<double> r_noise_var, std::vector<double> r_mixfrac, mat r_Rni, std::vector<mat> r_W_mat_vector,
+		std::vector<mat> r_Si_mat_vector, std::vector<mat> r_Minv_mat_vector):
 
+		PPCA(f_data, f_dim, f_n_components, f_n_models),
+
+		mixfrac(f_n_models,0), n_iter(0), Rni(f_dim[1],f_n_models,fill::zeros),
+
+		W_mat_vector(f_n_models,mat(f_dim[0],f_n_components,fill::zeros)), Si_mat_vector(f_n_models,mat(f_dim[0],f_dim[0],fill::zeros)),
+
+		Minv_mat_vector(f_n_models,mat(f_n_components,f_n_components,fill::zeros)), has_init(0)
+{
+
+	//TODO: write function to take in parameters from previous run and call it here.
+}
+
+
+/**
 std::tuple<int, int, int, int> PPCA_Mixture_EM::get_params(void){
 
 	return std::make_tuple(this->n_var,  this->n_obs, this->n_components, this->n_models);
 }
-
+**/
 int PPCA_Mixture_EM::get_n_components(void){
 	return this->n_components;
 }
 
+/**
 std::vector<mat> PPCA_Mixture_EM::get_components_(void){
 	return this->components_;
 }
-
+**/
 mat PPCA_Mixture_EM::get_mean(void){
 	return this->mean;
 }
@@ -60,6 +78,10 @@ mat PPCA_Mixture_EM::get_mean(void){
 std::vector<double> PPCA_Mixture_EM::get_noise_variance(void){
 	return this->noise_var;
 }
+std::vector<int> PPCA_Mixture_EM::get_data_dim(void){
+	return this->data_dim;
+}
+
 
 int PPCA_Mixture_EM::write_to_file_Rni(std::string filename){
 	// TODO: for the following write functions, need a standard...
@@ -72,17 +94,22 @@ int PPCA_Mixture_EM::write_to_file_Wmat(std::string filename){
 
 int PPCA_Mixture_EM::write_to_file_mean(std::string filename){ //TODO: we need to get the dimensions of the orignial data
 	try{
-		 mrcParser * writeParser = new mrcParser(filename);
-		 float * f_mean = new float[this->data_dim[0]*this->data_dim[1]*this->n_models];
-		 //TODO convert from mat to array.
-		 std::copy(f_data_double, f_data_double + this->data_dim[0]*this->data_dim[1]*this->n_models, f_mean);
+		 mrcParser writeParser = mrcParser(filename);
 
-		 writeParser->writeData(f_mean, this->data_dim);
+		 float * f_mean = new float[data_dim[0]*data_dim[1]*n_models];
 
-		 delete writeParser; writeParser = NULL;
+		 for (int i=0;i<mean.n_elem;i++){		// copy from mat to array.
+			 f_mean[i] = mean(i);				// armadillo mat is column major so this should work.
+		 }
+
+		 std::vector<int> out_dim(3);
+		 out_dim[0] = data_dim[0]; out_dim[1] = data_dim[1]; out_dim[2] = data_dim[2];
+
+		 writeParser.writeData(f_mean, out_dim);
+
 		 return 1;
 	}
-	catch (int e){
+	catch (...){				// TODO: make more specific.
 		return 0;
 	}
 
