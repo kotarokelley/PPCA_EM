@@ -11,13 +11,13 @@ using namespace arma;
 
 PPCA::PPCA(mat f_data, int* f_dim, int f_n_components, int f_n_models):
 
-	n_obs(f_dim[1]), n_var(f_dim[0]),
+	n_obs(f_dim[2]), n_var(f_dim[0]*f_dim[1]),
 
 	n_components(f_n_components), n_models(f_n_models),	// Keep only the largest components.
 
 	//components_(f_n_models,mat(f_dim[0],f_n_components)), explained_variance_ratio(f_n_models,rowvec(f_n_components)),
 
-	mean(f_dim[0],f_n_components,fill::zeros), noise_var(f_n_models,0), data_dim(2)//, noise_var_model(f_n_models,0)
+	mean(f_dim[0]*f_dim[1],f_n_components,fill::zeros), noise_var(f_n_models,0), data_dim(2)//, noise_var_model(f_n_models,0)
 {
 	data = f_data;
 	data_dim[0] = f_dim[0];			// This is kind of clunky. Should we do data_dim.push_back()?
@@ -30,15 +30,15 @@ PPCA_Mixture_EM::PPCA_Mixture_EM(mat f_data, int* f_dim, int f_n_components, int
 
 		PPCA(f_data, f_dim, f_n_components, f_n_models),
 
-		mixfrac(f_n_models,0), n_iter(0), Rni(f_dim[1],f_n_models,fill::zeros),
+		mixfrac(f_n_models,0), n_iter(0), Rni(f_dim[2],f_n_models,fill::zeros),
 
-		W_mat_vector(f_n_models,mat(f_dim[0],f_n_components,fill::zeros)), Si_mat_vector(f_n_models,mat(f_dim[0],f_dim[0],fill::zeros)),
+		W_mat_vector(f_n_models,mat(f_dim[0]*f_dim[1],f_n_components,fill::zeros)), Si_mat_vector(f_n_models,mat(f_dim[0]*f_dim[1],f_dim[0]*f_dim[1],fill::zeros)),
 
 		Minv_mat_vector(f_n_models,mat(f_n_components,f_n_components,fill::zeros)), has_init(0)
 {
 
 }
-
+/**
 PPCA_Mixture_EM::PPCA_Mixture_EM(mat f_data, int*f_dim, int f_n_components, int f_n_models,
 		mat r_mean, std::vector<double> r_noise_var, std::vector<double> r_mixfrac, mat r_Rni, std::vector<mat> r_W_mat_vector,
 		std::vector<mat> r_Si_mat_vector, std::vector<mat> r_Minv_mat_vector):
@@ -51,61 +51,90 @@ PPCA_Mixture_EM::PPCA_Mixture_EM(mat f_data, int*f_dim, int f_n_components, int 
 
 		Minv_mat_vector(f_n_models,mat(f_n_components,f_n_components,fill::zeros)), has_init(0)
 {
-
 	//TODO: write function to take in parameters from previous run and call it here.
 }
 
-
-/**
-std::tuple<int, int, int, int> PPCA_Mixture_EM::get_params(void){
-
-	return std::make_tuple(this->n_var,  this->n_obs, this->n_components, this->n_models);
-}
 **/
+
+
 int PPCA_Mixture_EM::get_n_components(void){
-	return this->n_components;
+	return n_components;
 }
 
-/**
-std::vector<mat> PPCA_Mixture_EM::get_components_(void){
-	return this->components_;
-}
-**/
+
 mat PPCA_Mixture_EM::get_mean(void){
-	return this->mean;
+	return mean;
 }
 
 std::vector<double> PPCA_Mixture_EM::get_noise_variance(void){
-	return this->noise_var;
+	return noise_var;
 }
+
 std::vector<int> PPCA_Mixture_EM::get_data_dim(void){
-	return this->data_dim;
+	return data_dim;
 }
 
+int PPCA_Mixture_EM::write_to_file_params(char* filename){
+	FILE * bmpOutput = fopen(filename, "wb");		// OPEN FILE
+	if(bmpOutput == NULL){
+		printf("Could not open file: %s", filename);
+		exit (1);
+	}
+	fseek(bmpOutput, 0, SEEK_SET);		    // SET POINTER TO BEGINNING OF FILE
+	fwrite(&n_obs, sizeof(int),1,bmpOutput);			// n particles
+	fwrite(&data_dim[0], sizeof(int),1,bmpOutput);		// xpix
+	fwrite(&data_dim[1], sizeof(int),1,bmpOutput);		// ypix
+	fwrite(&n_models, sizeof(int),1,bmpOutput);			// n models
+	fwrite(&n_components, sizeof(int),1,bmpOutput);		// n components
 
-int PPCA_Mixture_EM::write_to_file_Rni(std::string filename){
-	// TODO: for the following write functions, need a standard...
+	double * Rni_temp = new double[n_obs*n_models];		// Copy Rni. Not sure if this can be done another way.
+
+	for (int i=0; i<n_obs*n_models; i++){
+		Rni_temp[i] = Rni(i);							// armadillo is column major.
+	}
+
+	fwrite(Rni_temp, sizeof(double),n_obs*n_models, bmpOutput);
+	delete [] Rni_temp; Rni_temp = NULL;
+
+	double * mixfrac_temp = new double[n_models];
+
+	for (int i=0; i<n_models; i++){
+		mixfrac_temp[i] = mixfrac[i];
+	}
+
+	fwrite(mixfrac_temp, sizeof(double), n_models, bmpOutput);
+	delete [] mixfrac_temp; mixfrac_temp = NULL;
+
+	double * W_mat_vector_temp = new double[n_models*n_components*n_var];
+
+	for (int i=0; i<n_models; i++){
+		mat W_mat_temp = W_mat_vector[i];
+		for (int j=0; j<n_components*n_var; j++){
+			W_mat_vector_temp[i] =
+		}
+	}
 
 }
 
-int PPCA_Mixture_EM::write_to_file_Wmat(std::string filename){
+void PPCA_Mixture_EM::parse_prev_params(char* prev_run_filename){
 
 }
 
-int PPCA_Mixture_EM::write_to_file_mean(std::string filename){ //TODO: we need to get the dimensions of the orignial data
+int PPCA_Mixture_EM::write_to_file_mean(char* filename){ //TODO: we need to get the dimensions of the orignial data
 	try{
 		 mrcParser writeParser = mrcParser(filename);
 
-		 float * f_mean = new float[data_dim[0]*data_dim[1]*n_models];
+		 float * f_mean_temp = new float[n_var*n_models];
 
-		 for (int i=0;i<mean.n_elem;i++){		// copy from mat to array.
-			 f_mean[i] = mean(i);				// armadillo mat is column major so this should work.
+		 for (int i=0;i<mean.n_elem;i++){			// copy from mat to array.
+			 f_mean_temp[i] = mean(i);				// armadillo mat is column major so this should work.
 		 }
 
 		 std::vector<int> out_dim(3);
-		 out_dim[0] = data_dim[0]; out_dim[1] = data_dim[1]; out_dim[2] = data_dim[2];
+		 out_dim[0] = data_dim[0]; out_dim[1] = data_dim[1]; out_dim[2] = n_models;
 
-		 writeParser.writeData(f_mean, out_dim);
+		 writeParser.writeData(f_mean_temp, out_dim);
+		 delete [] f_mean_temp, f_mean_temp = NULL;
 
 		 return 1;
 	}
@@ -114,7 +143,6 @@ int PPCA_Mixture_EM::write_to_file_mean(std::string filename){ //TODO: we need t
 	}
 
 }
-
 
 
 void PPCA_Mixture_EM::initialize_uniform(void){
@@ -234,7 +262,7 @@ void PPCA_Mixture_EM::update_Rni(int n){
 		Rni(n,i) /= total;
 	}
 }
-
+															//TODO: This function calculates Cinv for each particle for each model. Very inefficient.
 double PPCA_Mixture_EM::calc_Ptn_i(int n, int i){			//TODO this function is missing a constant that drops out in the Rni equation. Fix?
 	mat Cinv = eye<mat>(this->n_var,this->n_var) * std::pow(this->noise_var[i],-2.0) -
 			this->W_mat_vector[i]*this->Minv_mat_vector[i]*this->W_mat_vector[i].t() * std::pow(this->noise_var[i],-4.0);

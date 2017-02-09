@@ -19,7 +19,7 @@ mrcParser::mrcParser(char * inputFile, int read){	// default read file. Otherwis
 		fseek(bmpInput, 0, SEEK_SET);		    // SET POINTER TO BEGINNING OF FILE
 	}
 	else{										// Write mode.
-		bmpInput = fopen(fileName, "w");
+		bmpInput = fopen(fileName, "wb");
 		if(bmpInput == NULL){
 			printf("Could not open file: %s", fileName);
 			exit (1);

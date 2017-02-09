@@ -10,6 +10,7 @@
 
 #include "kMeans.h"
 #include "Exceptions.h"
+#include "Parser.h"
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -109,8 +110,6 @@ class PPCA {
 
 		/** Class Members **/
 
-	    //int dim[2];
-
 	    int n_obs;
 
 	    int n_var;
@@ -119,9 +118,6 @@ class PPCA {
 
 		int n_models;
 
-		//std::vector<mat> components_;
-
-		//std::vector<rowvec> explained_variance_ratio;
 
 		mat mean;
 
@@ -171,11 +167,13 @@ class PPCA_Mixture_EM: public PPCA {
 		PPCA_Mixture_EM(mat f_data, int* f_dim, int f_n_components, int f_n_models);
 			/**	Multiple models, keep only largest components.
 			 */
-		PPCA_Mixture_EM(mat f_data, int*f_dim, int f_n_components, int f_n_models,
-				mat r_mean, std::vector<double> r_noise_var, std::vector<double> r_mixfrac, mat r_Rni, std::vector<mat> r_W_mat_vector,
-				std::vector<mat> r_Si_mat_vector, std::vector<mat> r_Minv_mat_vector);
+
+		//PPCA_Mixture_EM(mat f_data, int*f_dim, int f_n_components, int f_n_models,
+				//mat r_mean, std::vector<double> r_noise_var, std::vector<double> r_mixfrac, mat r_Rni, std::vector<mat> r_W_mat_vector,
+				//std::vector<mat> r_Si_mat_vector, std::vector<mat> r_Minv_mat_vector);
 			/** Use this constructor if starting from a previous job.
 			 */
+
 		/**---Class Methods---***/
 
 		std::tuple<int, int, int, int> get_params(void);
@@ -203,15 +201,18 @@ class PPCA_Mixture_EM: public PPCA {
 		std::vector<int> get_data_dim(void);
     	/** Return the dimensions of the indivisual images. xpix, ypix
     	 */
-		int write_to_file_Rni(std::string filename);  // TODO: for the following write functions, need a standard..
-	    	/** Write to file Rni.
+		int write_to_file_params(char* filename);  // TODO: for the following write functions, need a standard..
+	    	/** Write to file num particles, xpix, ypix, num models, num components,
+	    	 * Rni for each particle, Wmat for each model as flat array, Smat for each
+	    	 * model as flat array, Minv mat for each model as flat array.
 	    	 */
-	    int write_to_file_Wmat(std::string filename);
-	    	/** Write to file Wmat.
-	    	 */
-	    int write_to_file_mean(std::string filename);
+	    void parse_prev_params(char* prev_run_filename);
+	    /** Parse saved parameters from previous run.
+	     */
+	    int write_to_file_mean(char* filename);
     	/** Write to file mean images as an mrc file.
     	 */
+
 		void initialize_uniform(void);
 			/** Find initial values for posterior responsibility of mixture i,
 			 * 		Rni=p(i|tn) for each model by assigning uniform value of 1/n_models.
