@@ -78,7 +78,7 @@ class PPCA {
 		}
 		/**---Constructors---**/
 
-		PPCA(mat f_data, int* f_dim, int f_n_components, int f_n_models);
+		PPCA(mat f_data, std::vector<int> f_dim, int f_n_components, int f_n_models);
 
 		/**---Class Methods---***/
 
@@ -164,25 +164,23 @@ class PPCA_Mixture_EM: public PPCA {
 
 		/**---Constructors---**/
 
-		PPCA_Mixture_EM(mat f_data, int* f_dim, int f_n_components, int f_n_models);
+		PPCA_Mixture_EM(mat f_data, std::vector<int> f_dim, int f_n_components, int f_n_models);
 			/**	Multiple models, keep only largest components.
 			 */
 
-		//PPCA_Mixture_EM(mat f_data, int*f_dim, int f_n_components, int f_n_models,
-				//mat r_mean, std::vector<double> r_noise_var, std::vector<double> r_mixfrac, mat r_Rni, std::vector<mat> r_W_mat_vector,
-				//std::vector<mat> r_Si_mat_vector, std::vector<mat> r_Minv_mat_vector);
+		PPCA_Mixture_EM(mat f_data, std::vector<int> f_dim, int f_n_components, int f_n_models, char* prev_run_filename);
 			/** Use this constructor if starting from a previous job.
 			 */
 
 		/**---Class Methods---***/
 
 		std::tuple<int, int, int, int> get_params(void);
-		/**	Arguments:
-		 * 		void
-		 * 	Returns:
-		 * 		Tuple representing the parameters for this model.
-		 * 			Rows, Cols, n_components, n_models.
-		 */
+			/**	Arguments:
+			 * 		void
+			 * 	Returns:
+			 * 		Tuple representing the parameters for this model.
+			 * 			Rows, Cols, n_components, n_models.
+			 */
 		int get_n_components(void);
 			/** Return a copy of n_components.
 			 */
@@ -203,14 +201,16 @@ class PPCA_Mixture_EM: public PPCA {
     	 */
 		int write_to_file_params(char* filename);  // TODO: for the following write functions, need a standard..
 	    	/** Write to file num particles, xpix, ypix, num models, num components,
-	    	 * Rni for each particle, Wmat for each model as flat array, Smat for each
+	    	 * Rni for each particle, Mix frac for each model, mean for each model, Wmat for each model as flat array, Smat for each
 	    	 * model as flat array, Minv mat for each model as flat array.
 	    	 */
 	    void parse_prev_params(char* prev_run_filename);
 	    /** Parse saved parameters from previous run.
+	     * 	This file should is output by write_to_file_params. The file format is hardcoded.
 	     */
 	    int write_to_file_mean(char* filename);
     	/** Write to file mean images as an mrc file.
+    	 * 	This is an optional output of the mean for visualization.
     	 */
 
 		void initialize_uniform(void);
@@ -278,7 +278,7 @@ class PPCA_Mixture_EM: public PPCA {
 
 		std::vector<mat> W_mat_vector;
 
-		std::vector<mat> Si_mat_vector;
+		std::vector<mat> S_mat_vector;
 
 		std::vector<mat> Minv_mat_vector;
 

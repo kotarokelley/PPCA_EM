@@ -43,28 +43,37 @@ int main(void){
 	std::cout << f_dim[2] << "\n";
 
 	std::cout << "Casting data array to double array.\n";
+
 	double * f_data_double = new double[f_dim[0]*f_dim[1]*f_dim[2]];		// convert data to d.
+
 	std::memcpy(f_data_double, f_data, sizeof(double)*f_dim[0]*f_dim[1]*f_dim[2]);
 
 	std::cout << "Constructing a PPCA_Mixture_EM object, initialize with data from: " << filename << "\n";
+
 	std::cout << "Explicitly declaring 100 components and 25 models through constructor.\n";
 
 	arma::mat f_data_mat = arma::mat(f_data_double,f_dim[0]*f_dim[1],f_dim[2]);		// format data into an fmat object
-	int f_dim_2 [3];
-	f_dim_2[0] = f_dim[0]; f_dim_2[1] = f_dim[1]; f_dim_2[2] = f_dim[2];
+	//int f_dim_2 [3];
+	//f_dim_2[0] = f_dim[0]; f_dim_2[1] = f_dim[1]; f_dim_2[2] = f_dim[2];
 
-	PPCA_Mixture_EM pca = PPCA_Mixture_EM( f_data_mat, f_dim_2, 10, 10);
+	PPCA_Mixture_EM pca = PPCA_Mixture_EM( f_data_mat, f_dim, 10, 10);
 
 	std::cout << "Checking that data did not get altered by passing to PPCA_Mixture_EM constructor.\n";
+
 	int n_rows = pca.data.n_rows;
+
 	int n_cols = pca.data.n_cols;
+
 	bool equal = true;
 
 	for (int j=0; j<n_cols; j++) {
+
 		for (int i=0; i<n_rows; i++) {
 
 			if (pca.data(i,j) != f_data_double[j*n_rows + i]){
+
 				equal = false;
+
 				break;
 			}
 		}
@@ -72,24 +81,31 @@ int main(void){
 
 	if (equal)
 		std::cout << "Data has not been augmented.\n";
+
 	else
 		std::cout << "Data has been augmented.\n\n";
 
 	std::clock_t start, stop;
+
 	double elapsed;
 
-	std::cout << "Testing function write_to_file\n";
 
 
 	std::cout << "Testing function initialize_uniform.\n";
+
 	start = std::clock();
 
 	pca.initialize_uniform();
+
 	stop = std:: clock();
+
 	elapsed = (stop-start)/(double)CLOCKS_PER_SEC;     //(double(stop-start))/CLOCKS_PER_SEC;
+
 	std::cout << "Function initialize_uniform took: " << elapsed << " s\n\n";
 
+
 	std::cout << "Displaying the values of Rni for the first image.\n";
+
 	for (int i=0; i<pca.n_models; i++)
 		std::cout << pca.Rni(i,0) << "\n";
 
@@ -98,13 +114,72 @@ int main(void){
 	double total = 0.0;
 
 	for (int i=0; i<pca.n_models; i++){
+
 		total += pca.Rni(i,0);
 	}
+
 	if (std::abs(total-1.0) < 0.00001)
 		std::cout << "Probabilities Rni for first images summed to 1.\nPass!\n\n";
+
 	else
 		std::cout << "Probabilities Rni for first images did not sum to 1.\n" << "Summed to: " << total << "\nNoPass\n\n";
 
+	std::cout << "Testing function write_to_file\n";
+
+	pca.write_to_file_params("test_PPCA_parameters.bmp");
+
+	std::cout << "\nParameters have been saved to file: test_PPCA_parameters.bmp\n";
+
+	std::cout << "\nLets check to see if the data didn't get corrupted during writing\n";
+
+	std::cout << "\nConstructing a new pca object taking in parameters from test_PPCA_parameters.bmp";
+
+	PPCA_Mixture_EM pca2 = PPCA_Mixture_EM( f_data_mat, f_dim, 10, 10, "test_PPCA_parameters.bmp");
+
+
+	if (pca.n_obs != pca2.n_obs)
+		std::cout << "\nb_obs not consistent.\n";
+
+	else
+		std::cout << "\nb_obs is consistent.\n";
+
+
+	if (pca.n_var != pca2.n_var)
+		std::cout << "\nn_var not consistent.\n";
+
+	else
+		std::cout << "\nn_var is consistent.\n";
+
+	if (pca.n_components != pca2.n_components)
+		std::cout << "\nn_components not consistent.\n";
+
+	else
+		std::cout << "\nn_components is consistent.\n";
+
+	if (pca.n_models != pca2.n_models)
+		std::cout << "\nn_models not consistent.\n";
+
+	else
+		std::cout << "\nn_models is consistent.\n";
+
+	equal = 1;
+
+	for (int i=0; i<pca.n_models; i++){
+
+		if (pca.mixfrac[i] != pca2.mixfrac[i])
+			equal = 0;
+	}
+
+	if (!equal)
+		std::cout << "\nmixfrac not consistent";
+
+	else
+		std::cout << "\nmixfrac not consistent";
+
+
+
+
+	/**
 	std::cout << "Testing function initialize_random.\n";
 	start = std::clock();
 
@@ -144,7 +219,7 @@ int main(void){
 	std::cout << "Function optimize took: " << elapsed << " s\n\n";
 	std::cout << "Writing to file Rni\n";
 
-
+**/
 
 
 
