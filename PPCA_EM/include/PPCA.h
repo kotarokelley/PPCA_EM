@@ -18,6 +18,7 @@
 #include <vector>
 #include <tuple>
 #include <math.h>
+#include <sstream>
 #include <armadillo>
 
 
@@ -245,19 +246,24 @@ class PPCA_Mixture_EM: public PPCA {
 			 *	Returns:
 			 *		void
 			 */
-		void update_Rni(int n);
+		void update_Rni_all(void);
 			/*	Helper function to calculate the posterior responsibility of model i.			 *
 			 *	Arguments:
-			 *		n: int
-			 *			index for data point
+			 *		None.
+			 *		i: int
+			 *			index for model i.
 			 */
-		double calc_Ptn_i(int n, int i);				//TODO this function is missing a constant that drops out in the Rni equation. Fix?
+		double calc_Ptn_i(int f_n, int f_i, mat f_Cinv, double f_det_C);				//TODO this function is missing a constant that drops out in the Rni equation. Fix?
 			/*	Helper function to calculate the marginal distribution of a data point for all models.
 			 *	Arguments:
 			 *		n: int
 			 *			index for data point
 			 *		i: int
 			 *			index for model
+			 *		f_Cinv: mat
+			 *			pass in pre-calculated Cinv matrix.
+			 *		f_det_Cinv: double
+			 *			pass in pre-calculated det|Cinv|.
 			 */
 		void optimize(int f_max_iter);
 			/** Execute EM algorithm.
@@ -283,6 +289,7 @@ class PPCA_Mixture_EM: public PPCA {
 		std::vector<mat> Minv_mat_vector;
 
 		int has_init;
+
 
 };
 
