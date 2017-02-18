@@ -263,7 +263,7 @@ int main(void){
 	std::cout << "Performing one round of optimizations.\n";
 	start = std::clock();
 
-	pca.optimize(1);
+	pca.optimize(2);
 	stop = std::clock();
 	elapsed = (double(stop-start))/CLOCKS_PER_SEC;
 	std::cout << "Function optimize took: " << elapsed << " s\n\n";

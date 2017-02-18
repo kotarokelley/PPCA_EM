@@ -221,7 +221,7 @@ int PPCA_Mixture_EM::write_to_file_mean(char* filename){ //TODO: we need to get 
 
 	try{
 
-		 mrcParser writeParser = mrcParser(filename);
+		 mrcParser writeParser = mrcParser(filename,0);
 
 		 float * f_mean_temp = new float[n_var*n_models];
 
@@ -496,9 +496,8 @@ void PPCA_Mixture_EM::optimize(int f_max_iter){
 		std::string outfile_s = ss.str();
 		char * outFile_c = new char[outfile_s.length() + 1];
 		strcpy(outFile_c, outfile_s.c_str());
-		write_to_file_params(outFile_c);
+		write_to_file_mean(outFile_c);
 		delete [] outFile_c; outFile_c = NULL;
-		write_to_file_params(outFile_c);
 
 	}
 
