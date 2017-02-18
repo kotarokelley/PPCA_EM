@@ -23,12 +23,6 @@ PPCA::PPCA(mat f_data, std::vector<int> f_dim, int f_n_components, int f_n_model
 
 	data_dim = f_dim;
 
-	//data_dim[0] = f_dim[0];			// This is kind of clunky. Should we do data_dim.push_back()?
-
-	//data_dim[1] = f_dim[1];			// can we just say data_dim = f_dim?
-
-	//data_dim[2] = f_dim[2];
-
 }
 
 
@@ -104,52 +98,12 @@ int PPCA_Mixture_EM::write_to_file_params(char* filename){
 
 	fwrite(&n_components, sizeof(int),1,bmpOutput);		// n components
 
-	//double * Rni_temp = new double[n_obs*n_models];		// Copy Rni. Not sure if this can be done another way.
-
-	//for (int i=0; i<n_obs*n_models; i++)
-		//Rni_temp[i] = Rni(i);							// armadillo is column major.
-
 	// int status													// TODO: keep track of write success.
 
 	fwrite(Rni.memptr(), sizeof(double),n_obs*n_models, bmpOutput);
 
-	//delete [] Rni_temp; Rni_temp = NULL;
-
-	//double * mixfrac_temp = new double[n_models];
-
 	for (int i=0; i<n_models; i++)
 		fwrite(&mixfrac[i], sizeof(double), 1, bmpOutput);
-	//mixfrac_temp[i] = mixfrac[i];
-
-	//fwrite(mixfrac_temp, sizeof(double), n_models, bmpOutput);
-
-	//delete [] mixfrac_temp; mixfrac_temp = NULL;
-	/**
-	double * W_mat_vector_temp = new double[n_models*n_components*n_var];
-
-	for (int i=0; i<n_models; i++){
-		for (int j=0; j<n_components*n_var; j++){
-			W_mat_vector_temp[i] = W_mat_vector[i](j);
-		}
-	}
-
-	fwrite(W_mat_vector_temp, sizeof(double),n_models*n_components*n_var, bmpOutput);
-	delete [] W_mat_vector_temp; W_mat_vector_temp = NULL;
-
-	double * S_mat_vector_temp = new double[n_var*n_var*n_models];
-
-	for (int i=0; i<n_models; i++){
-		for (int j=0; j<n_var*n_var; j++){
-			S_mat_vector_temp[i] = S_mat_vector[i](j);
-		}
-	}
-
-	fwrite(S_mat_vector_temp, sizeof(double),n_models*n_var*n_var, bmpOutput);
-	delete [] S_mat_vector_temp; S_mat_vector_temp = NULL;
-
-
-	double * Minv_mat_vector_temp = new double[n_components*n_components];
-	**/
 
 	fwrite(mean.memptr(), sizeof(double),n_models*n_var, bmpOutput);
 
