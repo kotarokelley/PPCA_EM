@@ -449,7 +449,7 @@ void PPCA_Mixture_EM::optimize(int f_max_iter){
 				tempSW_mat += Rni(n,i) * tempvec * (tempvec.t() * W_mat_vector[i]);
 			}
 			**/
-			tempSW_mat = W_mat_vector[i] * S_mat_vector[i];
+			tempSW_mat =  S_mat_vector[i] *W_mat_vector[i];
 
 
 			mat tempInv_mat = inv(noise_var[i] * eye(n_components, n_components) + Minv_mat_vector[i] * W_mat_vector[i].t() * tempSW_mat);

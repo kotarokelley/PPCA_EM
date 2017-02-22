@@ -46,7 +46,7 @@ int main(void){
 
 	float * f_data_float = new float[f_dim[0]*f_dim[1]*f_dim[2]];
 
-	std::memcpy(f_data_float, f_data, sizeof(double)*f_dim[0]*f_dim[1]*f_dim[2]);
+	std::memcpy(f_data_float, f_data, sizeof(float)*f_dim[0]*f_dim[1]*f_dim[2]);
 
 	double * f_data_double = new double[f_dim[0]*f_dim[1]*f_dim[2]];
 	std::cout << "\nConverting data to double for input into pca object.\n";
