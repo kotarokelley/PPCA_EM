@@ -22,7 +22,69 @@ PPCA::PPCA(mat f_data, std::vector<int> f_dim, int f_n_components, int f_n_model
 	data = f_data;
 
 	data_dim = f_dim;
+}
 
+void PPCA::normalize_data(void){
+	std::vector<double> dat_mean(n_var,0);
+	std::vector<double> dat_std(n_var, 0);
+
+	for (int i=0; i<n_var; i++){
+		for (int j=0; j<n_obs; j++){
+			dat_mean[i] += data(i,j);
+		}
+		dat_mean[i] /= (double)n_obs;
+	}
+
+
+	for (int i=0; i<n_var; i++){
+		for (int j=0; j<n_obs; j++){
+			dat_std[i] += std::pow(data(i,j) - dat_mean[i], 2);
+		}
+
+		dat_std[i] = std::sqrt( dat_std[i] / (double)n_obs);
+	}
+
+	for(int i=0; i<n_var; i++){
+		for (int j=0; j<n_obs; j++){
+			data(i,j) = (data(i,j) - dat_mean[i]) / dat_std[i];
+		}
+	}
+
+}
+
+int PPCA::get_n_obs(void){
+
+	return n_obs;
+}
+
+int PPCA::get_n_var(void){
+
+	return n_var;
+}
+
+int PPCA::get_n_components(void){
+
+	return n_components;
+}
+
+int PPCA::get_n_models(void){
+
+	return n_models;
+}
+
+mat PPCA::get_mean(void){
+
+	return mean;
+}
+
+std::vector<double> PPCA::get_noise_variance(void){
+
+	return noise_var;
+}
+
+std::vector<int> PPCA::get_data_dim(void){
+
+	return data_dim;
 }
 
 
@@ -53,27 +115,6 @@ PPCA_Mixture_EM::PPCA_Mixture_EM(mat f_data, std::vector<int> f_dim, int f_n_com
 	parse_prev_params(prev_run_filename);			//TODO this is doing redundant work to the initalization list.
 
 	has_init = 1;
-}
-
-int PPCA_Mixture_EM::get_n_components(void){
-
-	return n_components;
-}
-
-
-mat PPCA_Mixture_EM::get_mean(void){
-
-	return mean;
-}
-
-std::vector<double> PPCA_Mixture_EM::get_noise_variance(void){
-
-	return noise_var;
-}
-
-std::vector<int> PPCA_Mixture_EM::get_data_dim(void){
-
-	return data_dim;
 }
 
 int PPCA_Mixture_EM::write_to_file_params(char* filename){
@@ -208,6 +249,7 @@ void PPCA_Mixture_EM::initialize_uniform(void){
 			Rni(n,i) = 1/(double)n_models;
 	}
 
+	normalize_data();
 	initialize_helper();									// Initialize other parameters.
 
 }
@@ -235,6 +277,7 @@ void PPCA_Mixture_EM::initialize_random(void){
 
 	}
 
+	normalize_data();
 	initialize_helper();									// Initialize other parameters.
 }
 
@@ -251,6 +294,7 @@ void PPCA_Mixture_EM::initialize_kmeans(void){
 	for (int n=0; n<n_obs; n++)
 		Rni(n,solution[n]) = 1;						// Assign total probability to kMeans cluster.
 													// Maybe spread probability by gaussian decay around assigned cluster?
+	normalize_data();
 	initialize_helper();							// Initialize other parameters.
 
 }
@@ -307,17 +351,12 @@ void PPCA_Mixture_EM::initialize_helper(void){
 			W_mat_vector[i].col(n_components - n - 1) = Si_eigvec.col(n_var - n - 1)
 					* std::sqrt((Si_eigval(n_var - n - 1) - noise_var[i]));  // U*sqrt(Aq-sig^2*I)*R
 
-
-		//W_mat_vector[i] = (Si_eigvec.cols(0, n_components-1))*temp_diag;		// U*sqrt(Aq-sig^2*I)*R  //TODO: check that arma indexing is consistent!!
-
 		mat tempM = W_mat_vector[i].t() * W_mat_vector[i];						// Initialize Minv matrices.
 
 		for (int n=0; n<n_components; n++)
 			tempM(n,n) += noise_var[i];
 
-		Minv_mat_vector[i] = inv(tempM);							// TODO: this is more efficient than the line below, but check that it is correct!
-		//Minv_mat_vector[i] = noise_var[i]*(inv(noise_var[i] * eye<mat>(n_components,
-				//n_components) + W_mat_vector[i].t() * W_mat_vector[i]));
+		Minv_mat_vector[i] = inv(tempM);
 	}
 
 	// All parameters initialized, ready to start iterating.
@@ -331,12 +370,12 @@ void PPCA_Mixture_EM::update_Rni_all( void){
 
 	for (int i=0; i<n_models; i++){
 
-
 		mat Cinv = (eye<mat>(n_var,n_var) - W_mat_vector[i] * Minv_mat_vector[i] * W_mat_vector[i].t()) / noise_var[i];
 
-		double Cdet = std::pow(det(eye<mat>(n_var,n_var) * noise_var[i] +  W_mat_vector[i] * W_mat_vector[i].t()),-0.5);
+		double Cdet = det(eye<mat>(n_var,n_var) * noise_var[i] +  W_mat_vector[i] * W_mat_vector[i].t());
 
 		for (int n=0; n<n_obs; n++){
+
 			Rni(n,i) = calc_Ptn_i(n,i,Cinv, Cdet) * mixfrac[i];
 			total[n] += Rni(n,i);
 		}
@@ -344,8 +383,9 @@ void PPCA_Mixture_EM::update_Rni_all( void){
 	}
 
 	for (int n=0; n<n_obs; n++)
-		for(int i=0; i<n_models; i++)
+		for(int i=0; i<n_models; i++){
 			Rni(n,i) /= total[n];
+	}
 
 	delete [] total; total = NULL;
 }
@@ -354,9 +394,9 @@ double PPCA_Mixture_EM::calc_Ptn_i(int f_n, int f_i, mat f_Cinv, double f_det_C)
 
 	colvec temp = data.col(f_n) - mean.col(f_i);
 
-	double arg = as_scalar(temp.t()* f_Cinv * temp) / -2.0;
+	double arg = as_scalar(temp.t()* f_Cinv * temp) / 2.0;
 
-	return f_det_C * std::exp(arg);
+	return std::sqrt(1.0/f_det_C) * std::exp(-arg);
 
 }
 
@@ -367,10 +407,7 @@ void PPCA_Mixture_EM::optimize(int f_max_iter){
 
 	n_iter = 0;								// reset
 
-	while (n_iter <= f_max_iter){
-
-		//for (int n=0; n<n_obs; n++)						// Update Rni first.
-		//	update_Rni(n);
+	while (n_iter < f_max_iter){
 
 		update_Rni_all();
 
@@ -384,7 +421,7 @@ void PPCA_Mixture_EM::optimize(int f_max_iter){
 			mixfrac[i] /= (double)n_obs;
 		}
 
-		for (int i=0; i<this->n_models; i++){
+		for (int i=0; i<n_models; i++){
 
 			colvec temp_mean(n_var,fill::zeros);			// Update mean parameter.
 			double temp_den = 0;
@@ -399,17 +436,21 @@ void PPCA_Mixture_EM::optimize(int f_max_iter){
 		}
 
 
-		for (int i=0; i<n_models; i++){					// Update W mat, noise_var, S mat, and Minv mat last
+		for (int i=0; i<n_models; i++){						// Update W mat, noise_var, S mat, and Minv mat last
 
 			mat tempSW_mat(n_var, n_components, fill::zeros);			//Calculate S*W.
-
+			/**
+			 * The below lines are meant to calculate S*W efficiently, but we need to divide by
+			 * mixfrac[i]*n_obs. Unfortunately, mixfrac is updated first. We need to save a copy
+			 * of the old mixfrac value before update.
 			for (int n=0; n<n_obs; n++){
 
 				colvec tempvec = data.col(n) - mean(i);
 				tempSW_mat += Rni(n,i) * tempvec * (tempvec.t() * W_mat_vector[i]);
 			}
+			**/
+			tempSW_mat = W_mat_vector[i] * S_mat_vector[i];
 
-			//tempSW_mat /= mixfrac[i] * n_obs;
 
 			mat tempInv_mat = inv(noise_var[i] * eye(n_components, n_components) + Minv_mat_vector[i] * W_mat_vector[i].t() * tempSW_mat);
 

@@ -42,11 +42,17 @@ int main(void){
 	std::cout << f_dim[1] << "\n";
 	std::cout << f_dim[2] << "\n";
 
-	std::cout << "Casting data array to double array.\n";
+	std::cout << "Casting raw data array to float array.\n";
 
-	double * f_data_double = new double[f_dim[0]*f_dim[1]*f_dim[2]];		// convert data to d.
+	float * f_data_float = new float[f_dim[0]*f_dim[1]*f_dim[2]];
 
-	std::memcpy(f_data_double, f_data, sizeof(double)*f_dim[0]*f_dim[1]*f_dim[2]);
+	std::memcpy(f_data_float, f_data, sizeof(double)*f_dim[0]*f_dim[1]*f_dim[2]);
+
+	double * f_data_double = new double[f_dim[0]*f_dim[1]*f_dim[2]];
+	std::cout << "\nConverting data to double for input into pca object.\n";
+	for (int i=0; i<f_dim[0]*f_dim[1]*f_dim[2]; i++){
+		f_data_double[i] = f_data_float[i];
+	}
 
 	std::cout << "Constructing a PPCA_Mixture_EM object, initialize with data from: " << filename << "\n";
 
@@ -263,7 +269,7 @@ int main(void){
 	std::cout << "Performing one round of optimizations.\n";
 	start = std::clock();
 
-	//pca.optimize(2);
+	pca.optimize(1);
 	stop = std::clock();
 	elapsed = (double(stop-start))/CLOCKS_PER_SEC;
 	std::cout << "Function optimize took: " << elapsed << " s\n\n";
@@ -279,6 +285,7 @@ int main(void){
 	//delete testParser; testParser = NULL;
 	delete f_data; f_data = NULL;
 	delete f_header; f_header = NULL;
+	delete [] f_data_float; f_data_float = NULL;
 	delete [] f_data_double; f_data_double = NULL;
 	//delete pca; pca = NULL;
 

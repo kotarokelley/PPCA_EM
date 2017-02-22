@@ -55,9 +55,8 @@ class PPCA {
      *		data: mat
      *			Input data. Assumes the following format: columns of samples, rows of data points.
      *	Class Methods:
-     *
-     *		get_params:
-     *			Get parameters for this estimator.
+     *		normalize_data:
+     *			Subtract mean and divide by std dev for each obs for each variable.
      *		get_n_components_
      *			Get how many components we are keeping.
      *		n_models: int
@@ -83,26 +82,31 @@ class PPCA {
 
 		/**---Class Methods---***/
 
-		//virtual std::tuple<int, int, int, int> get_params(void) = 0;
-			/**	Arguments:
-			 * 		void
-			 * 	Returns:
-			 * 		Tuple representing the parameters for this model.
-			 * 			Rows, Cols, n_components, n_models.
+		void normalize_data(void);
+
+		int get_n_obs(void);
+			/** Returns the number of observations in data.
 			 */
-	    virtual int get_n_components(void) = 0;
-			/** Return a copy of n_components.
+		int get_n_var(void);
+			/** Returns the number of variables in each observation.
 			 */
+
+	    int get_n_components(void);
+			/** Return the number of components that are kept.
+			 */
+	    int get_n_models(void);
+	    	/** Return the number of models in this PCA.
+	    	 */
 	    //virtual std::vector<mat> get_components_(void) = 0;
 	    	/** Return a copy of components_.
 	    	 */
-	    virtual mat get_mean(void) = 0;
+	    mat get_mean(void);
     		/** Return a copy of mean
     		 */
-	    virtual std::vector<double> get_noise_variance(void) = 0;
+	    std::vector<double> get_noise_variance(void);
     		/** Return a copy of noise_variance
     		 */
-	    virtual std::vector<int> get_data_dim(void) = 0;
+	    std::vector<int> get_data_dim(void);
 	    	/** Return the dimensions of the indivisual images. xpix, ypix
 	    	 */
 	    //virtual std::vector<float> get_noise_variance_model(void) = 0;
@@ -118,7 +122,6 @@ class PPCA {
 		int n_components;
 
 		int n_models;
-
 
 		mat mean;
 
@@ -175,31 +178,13 @@ class PPCA_Mixture_EM: public PPCA {
 
 		/**---Class Methods---***/
 
-		std::tuple<int, int, int, int> get_params(void);
-			/**	Arguments:
-			 * 		void
-			 * 	Returns:
-			 * 		Tuple representing the parameters for this model.
-			 * 			Rows, Cols, n_components, n_models.
-			 */
-		int get_n_components(void);
-			/** Return a copy of n_components.
-			 */
 		//std::vector<mat> get_components_(void);
 			/** Return a copy of componentes_.
 			 */
 		//std::vector<rowvec> get_explained_variance_ratio(void);
 			/** Return a copy of explained_variance_ratio.
 			 */
-		mat get_mean(void);
-			/** Return a copy of mean
-			 */
-		std::vector<double> get_noise_variance(void);
-			/** Return a copy of noise_variance
-			 */
-		std::vector<int> get_data_dim(void);
-    	/** Return the dimensions of the indivisual images. xpix, ypix
-    	 */
+
 		int write_to_file_params(char* filename);  // TODO: for the following write functions, need a standard..
 	    	/** Write to file num particles, xpix, ypix, num models, num components,
 	    	 * Rni for each particle, Mix frac for each model, mean for each model, Wmat for each model as flat array, Smat for each
