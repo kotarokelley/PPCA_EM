@@ -266,14 +266,13 @@ int main(void){
 		std::cout << "\nProbabilities Rni for first images did not sum to 1.\n" << "Summed to: " << total << "\nNoPass\n";
 
 
-	std::cout << "Performing one round of optimizations.\n";
+	std::cout << "Performing 10 round of optimizations.\n";
 	start = std::clock();
 
-	pca.optimize(1);
+	pca.optimize(10);
 	stop = std::clock();
 	elapsed = (double(stop-start))/CLOCKS_PER_SEC;
 	std::cout << "Function optimize took: " << elapsed << " s\n\n";
-	std::cout << "Writing to file Rni\n";
 
 
 

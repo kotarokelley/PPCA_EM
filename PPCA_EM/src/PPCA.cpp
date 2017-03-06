@@ -248,10 +248,8 @@ void PPCA_Mixture_EM::initialize_uniform(void){
 		for (int i=0; i<n_models; i++)						// for generating data point tn uniformly.
 			Rni(n,i) = 1/(double)n_models;
 	}
-
-	normalize_data();
+	//normalize_data();
 	initialize_helper();									// Initialize other parameters.
-
 }
 
 void PPCA_Mixture_EM::initialize_random(void){
@@ -294,9 +292,8 @@ void PPCA_Mixture_EM::initialize_kmeans(void){
 	for (int n=0; n<n_obs; n++)
 		Rni(n,solution[n]) = 1;						// Assign total probability to kMeans cluster.
 													// Maybe spread probability by gaussian decay around assigned cluster?
-	normalize_data();
+	//normalize_data();
 	initialize_helper();							// Initialize other parameters.
-
 }
 
 void PPCA_Mixture_EM::initialize_helper(void){
@@ -368,36 +365,73 @@ void PPCA_Mixture_EM::update_Rni_all( void){
 
 	double * total = new double[n_obs]();  //doubletotal(0);
 
+	mat log_Ptn_i(n_obs,n_models,fill::zeros);
+
 	for (int i=0; i<n_models; i++){
 
 		mat Cinv = (eye<mat>(n_var,n_var) - W_mat_vector[i] * Minv_mat_vector[i] * W_mat_vector[i].t()) / noise_var[i];
 
-		double Cdet = det(eye<mat>(n_var,n_var) * noise_var[i] +  W_mat_vector[i] * W_mat_vector[i].t());
+		mat C = eye<mat>(n_var,n_var) * noise_var[i] +  W_mat_vector[i] * W_mat_vector[i].t();
 
 		for (int n=0; n<n_obs; n++){
-
-			Rni(n,i) = calc_Ptn_i(n,i,Cinv, Cdet) * mixfrac[i];
-			total[n] += Rni(n,i);
+			Rni(n,i) = calc_log_Ptn_i(n,i,Cinv, C);
+			if (std::isinf(log_Ptn_i(n,i)))
+				std:cout << "INF detected log_Prn_i\n";
 		}
 
+		double * max = new double[n_obs]();							// get largest log_Ptn_i for each observation
+		for (int n=0; n<n_obs; n++)
+			max[n] = log_Ptn_i.row(n).max();
+
+		for (int n=0; n<n_obs; n++){								// subtract largest log_Ptn_i from each model for each observation
+			for (int i=0; i<n_models; i++){							// This is all for avoiding large numbers. Better numerical stability.
+				log_Ptn_i(n,i) -= max[n];
+			}
+		}
 	}
 
-	for (int n=0; n<n_obs; n++)
+	for (int n=0; n<n_obs; n++){
 		for(int i=0; i<n_models; i++){
-			Rni(n,i) /= total[n];
+			Rni(n,i) = std::exp(log_Ptn_i(n,i));
+			total[n] += Rni(n,i);
+		}
 	}
+
+	for (int n=0; n<n_obs; n++){									// Normalize.
+		for(int i=0; i<n_models; i++){
+			Rni(n,i) *= (mixfrac[n] / total[n]);
+		}
+	}
+
 
 	delete [] total; total = NULL;
 }
-															//TODO: This function calculates Cinv for each particle for each model. Very inefficient.
+
 double PPCA_Mixture_EM::calc_Ptn_i(int f_n, int f_i, mat f_Cinv, double f_det_C){			//TODO this function is missing a constant that drops out in the Rni equation. Fix?
 
 	colvec temp = data.col(f_n) - mean.col(f_i);
 
 	double arg = as_scalar(temp.t()* f_Cinv * temp) / 2.0;
 
-	return std::sqrt(1.0/f_det_C) * std::exp(-arg);
+	return std::sqrt(1.0/f_det_C) * std::exp(-arg); 	//TODO this is numerically unstable
 
+}
+
+double PPCA_Mixture_EM::calc_log_Ptn_i(int f_n, int f_i, mat f_Cinv, mat f_C){
+	colvec temp = data.col(f_n) - mean.col(f_i);
+
+	double arg = as_scalar(temp.t()* f_Cinv * temp) / 2.0;
+
+	mat chol_C = chol(f_C);										// Cholesky decompositokin of f_C.
+
+	double log_det_C(0);										// Log determinant of f_C.
+	for (int i=0; i<n_components; i++)
+		log_det_C += std::log(chol_C(i,i));
+	log_det_C *= 2;
+
+	double log_Ptn_i = -0.5 * log_det_C -arg;
+
+	return log_Ptn_i;
 }
 
 void PPCA_Mixture_EM::optimize(int f_max_iter){
@@ -434,7 +468,6 @@ void PPCA_Mixture_EM::optimize(int f_max_iter){
 
 			mean.col(i) = temp_mean/temp_den;
 		}
-
 
 		for (int i=0; i<n_models; i++){						// Update W mat, noise_var, S mat, and Minv mat last
 
@@ -474,6 +507,7 @@ void PPCA_Mixture_EM::optimize(int f_max_iter){
 
 		}
 
+		std::cout << "Iteration " << n_iter + 1 << " completed.\n";
 		this->n_iter++;
 
 		if (!n_iter % 10 ){
