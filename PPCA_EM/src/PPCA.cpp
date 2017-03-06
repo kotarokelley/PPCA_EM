@@ -275,7 +275,7 @@ void PPCA_Mixture_EM::initialize_random(void){
 
 	}
 
-	normalize_data();
+	//normalize_data();
 	initialize_helper();									// Initialize other parameters.
 }
 
@@ -345,8 +345,7 @@ void PPCA_Mixture_EM::initialize_helper(void){
 		noise_var[i] = temp_noise_var / ((double)(n_var - n_components));		// divide temp_noise_var by d-q
 
 		for (int n=0; n<n_components; n++)										// Initialize W matrices.
-			W_mat_vector[i].col(n_components - n - 1) = Si_eigvec.col(n_var - n - 1)
-					* std::sqrt((Si_eigval(n_var - n - 1) - noise_var[i]));  // U*sqrt(Aq-sig^2*I)*R
+			W_mat_vector[i].col(n) = Si_eigvec.col(n_var - n - 1) * std::sqrt((Si_eigval(n_var - n - 1) - noise_var[i]));  // U*sqrt(Aq-sig^2*I)*R
 
 		mat tempM = W_mat_vector[i].t() * W_mat_vector[i];						// Initialize Minv matrices.
 
