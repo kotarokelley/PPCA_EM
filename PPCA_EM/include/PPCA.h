@@ -251,7 +251,7 @@ class PPCA_Mixture_EM: public PPCA {
 			 *			pass in pre-calculated det|Cinv|.
 			 */
 
-		double calc_log_Ptn_i(int f_n, int f_i, mat f_Cinv, mat f_C);
+		double calc_log_Ptn_i(int f_n, int f_i, mat f_Cinv, double f_log_det_C);
 		/*	Helper function to calculate the marginal distribution of a data point for all models.
 		 *	Arguments:
 		 *		n: int
@@ -260,8 +260,8 @@ class PPCA_Mixture_EM: public PPCA {
 		 *			index for model
 		 *		f_Cinv: mat
 		 *			pass in pre-calculated Cinv matrix
-		 *		f_C: mat
-		 *			pass in C to calculate it's log determinant
+		 *		f_log_det_C: double
+		 *			log determinant of C
 		 */
 
 

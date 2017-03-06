@@ -372,8 +372,16 @@ void PPCA_Mixture_EM::update_Rni_all( void){
 
 		mat C = eye<mat>(n_var,n_var) * noise_var[i] +  W_mat_vector[i] * W_mat_vector[i].t();
 
+		mat Q_C; mat R_C; mat sign;
+
+		qr(Q_C, R_C, C);											// QR decomposition of C.
+
+		double log_det_C(0);
+		for (int k=0; k<n_var; k++)
+			log_det_C += std::log(R_C(k,k));
+
 		for (int n=0; n<n_obs; n++){
-			Rni(n,i) = calc_log_Ptn_i(n,i,Cinv, C);
+			Rni(n,i) = calc_log_Ptn_i(n,i,Cinv, log_det_C);
 			if (std::isinf(log_Ptn_i(n,i)))
 				std:cout << "INF detected log_Prn_i\n";
 		}
@@ -416,19 +424,12 @@ double PPCA_Mixture_EM::calc_Ptn_i(int f_n, int f_i, mat f_Cinv, double f_det_C)
 
 }
 
-double PPCA_Mixture_EM::calc_log_Ptn_i(int f_n, int f_i, mat f_Cinv, mat f_C){
+double PPCA_Mixture_EM::calc_log_Ptn_i(int f_n, int f_i, mat f_Cinv, double f_log_det_C){
 	colvec temp = data.col(f_n) - mean.col(f_i);
 
 	double arg = as_scalar(temp.t()* f_Cinv * temp) / 2.0;
 
-	mat chol_C = chol(f_C);										// Cholesky decompositokin of f_C.
-
-	double log_det_C(0);										// Log determinant of f_C.
-	for (int i=0; i<n_components; i++)
-		log_det_C += std::log(chol_C(i,i));
-	log_det_C *= 2;
-
-	double log_Ptn_i = -0.5 * log_det_C -arg;
+	double log_Ptn_i = -0.5 * f_log_det_C - arg;
 
 	return log_Ptn_i;
 }
