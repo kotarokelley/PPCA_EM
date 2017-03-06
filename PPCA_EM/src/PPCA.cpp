@@ -17,7 +17,7 @@ PPCA::PPCA(mat f_data, std::vector<int> f_dim, int f_n_components, int f_n_model
 
 	//components_(f_n_models,mat(f_dim[0],f_n_components)), explained_variance_ratio(f_n_models,rowvec(f_n_components)),
 
-	mean(f_dim[0]*f_dim[1],f_n_components,fill::zeros), noise_var(f_n_models,0), data_dim(3)//, noise_var_model(f_n_models,0)
+	mean(f_dim[0]*f_dim[1],f_n_models,fill::zeros), noise_var(f_n_models,0), data_dim(3)//, noise_var_model(f_n_models,0)
 {
 	data = f_data;
 
