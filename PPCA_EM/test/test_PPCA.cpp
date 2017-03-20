@@ -13,13 +13,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctime>
-#include "opencv2/core/core.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
-#include "opencv2/highgui.hpp"
+
 
 int main(void){
 
-	char * filename = "zip_test.mrc";
+	char * filename = "zip_test_plusnoise.mrc";
 
 	mrcParser testParser = mrcParser(filename);  // input binary data
 
@@ -62,7 +60,7 @@ int main(void){
 	//int f_dim_2 [3];
 	//f_dim_2[0] = f_dim[0]; f_dim_2[1] = f_dim[1]; f_dim_2[2] = f_dim[2];
 
-	PPCA_Mixture_EM pca = PPCA_Mixture_EM( f_data_mat, f_dim, 2, 2);
+	PPCA_Mixture_EM pca = PPCA_Mixture_EM( f_data_mat, f_dim, 10, 10);
 
 	std::cout << "Checking that data did not get altered by passing to PPCA_Mixture_EM constructor.\n";
 
@@ -94,9 +92,10 @@ int main(void){
 	std::clock_t start, stop;
 
 	double elapsed;
+	double total = 0.0;
 
 
-
+/**
 	std::cout << "Testing function initialize_uniform.\n";
 
 	start = std::clock();
@@ -116,8 +115,6 @@ int main(void){
 		std::cout << pca.Rni(i,0) << "\n";
 
 	std::cout << "\nMake sure that they sum to 1.\n";
-
-	double total = 0.0;
 
 	for (int i=0; i<pca.n_models; i++){
 
@@ -140,7 +137,7 @@ int main(void){
 
 	std::cout << "\nConstructing a new pca object taking in parameters from test_PPCA_parameters.bmp";
 
-	PPCA_Mixture_EM pca2 = PPCA_Mixture_EM( f_data_mat, f_dim, 2, 2, "test_PPCA_parameters.bmp");
+	PPCA_Mixture_EM pca2 = PPCA_Mixture_EM( f_data_mat, f_dim, 20, 100, "test_PPCA_parameters.bmp");
 
 
 	if (pca.n_obs != pca2.n_obs)
@@ -240,11 +237,11 @@ int main(void){
 	else
 		std::cout << "\nMinv_mat consistent\n";
 
-
-	std::cout << "Testing function initialize_random.\n";
+	**/
+	std::cout << "Testing function initialize_kmeans.\n";
 	start = std::clock();
-
-	pca.initialize_random();
+	//pca.initialize_random();
+	pca.initialize_kmeans(20);
 	stop = std::clock();
 	elapsed = (double(stop-start))/CLOCKS_PER_SEC;
 	std::cout << "Function initialize_random took: " << elapsed << " s\n\n";
@@ -261,15 +258,27 @@ int main(void){
 		total += pca.Rni(0,i);
 	}
 	if (std::abs(total-1.0) < 0.00001)
-		std::cout << "\nProbabilities Rni for first images summed to 1.\nPass!\n";
+		std::cout << "\nProbabilities Rni for first image summed to 1.\nPass!\n";
 	else
-		std::cout << "\nProbabilities Rni for first images did not sum to 1.\n" << "Summed to: " << total << "\nNoPass\n";
+		std::cout << "\nProbabilities Rni for first image did not sum to 1.\n" << "Summed to: " << total << "\nNoPass\n";
+
+	std::cout << "Displaying the values of mixfrac for each model.\n";
+
+	total = 0.0;
+	for (int i=0; i<pca.n_models; i++){
+		std::cout << "mixfrac[" << i << "]: " << pca.mixfrac[i] << "\n";
+		total += pca.mixfrac[i];
+	}
+	//if (std::abs(total-1.0) < 0.00001)
+	//	std::cout << "\nProbabilities of mixfrac summed to 1. \nPass!\n";
+	//else
+	//		std::cout << "\nProbabilities mixfrac did not sum to 1.\n" << "Summed to: " << total << "\nNoPass\n";
 
 
-	std::cout << "Performing 10 round of optimizations.\n";
+	std::cout << "Performing 100 round of optimizations.\n";
 	start = std::clock();
 
-	pca.optimize(10);
+	pca.optimize(20,1,2);
 	stop = std::clock();
 	elapsed = (double(stop-start))/CLOCKS_PER_SEC;
 	std::cout << "Function optimize took: " << elapsed << " s\n\n";
@@ -289,6 +298,10 @@ int main(void){
 	//delete pca; pca = NULL;
 
 }
+
+
+
+
 
 
 

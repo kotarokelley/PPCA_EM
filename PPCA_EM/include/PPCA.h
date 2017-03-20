@@ -185,7 +185,7 @@ class PPCA_Mixture_EM: public PPCA {
 			/** Return a copy of explained_variance_ratio.
 			 */
 
-		int write_to_file_params(char* filename);  // TODO: for the following write functions, need a standard..
+		int write_to_file_params(int n_iter);  // TODO: for the following write functions, need a standard..
 	    	/** Write to file num particles, xpix, ypix, num models, num components,
 	    	 * Rni for each particle, Mix frac for each model, mean for each model, Wmat for each model as flat array, Smat for each
 	    	 * model as flat array, Minv mat for each model as flat array.
@@ -194,7 +194,7 @@ class PPCA_Mixture_EM: public PPCA {
 	    /** Parse saved parameters from previous run.
 	     * 	This file should is output by write_to_file_params. The file format is hardcoded.
 	     */
-	    int write_to_file_mean(char* filename);
+	    int write_to_file_mean(int n_iter);
     	/** Write to file mean images as an mrc file.
     	 * 	This is an optional output of the mean for visualization.
     	 */
@@ -215,7 +215,7 @@ class PPCA_Mixture_EM: public PPCA {
 			 *	Returns:
 			 *		void
 			 */
-		void initialize_kmeans(void);
+		void initialize_kmeans(int f_max_iter);
 			/** Find initial values for posterior responsibility of mixture i,
 			 * 		Rni=p(i|tn) for each model by kmeans clustering of data.
 			 * 	Arguments:
@@ -238,7 +238,7 @@ class PPCA_Mixture_EM: public PPCA {
 			 *		i: int
 			 *			index for model i.
 			 */
-		double calc_Ptn_i(int f_n, int f_i, mat f_Cinv, double f_det_C);				//TODO this function is missing a constant that drops out in the Rni equation. Fix?
+		//double calc_Ptn_i(int f_n, int f_i, mat f_Cinv, double f_det_C);				//TODO this function is missing a constant that drops out in the Rni equation. Fix?
 			/*	Helper function to calculate the marginal distribution of a data point for all models.
 			 *	Arguments:
 			 *		n: int
@@ -265,11 +265,15 @@ class PPCA_Mixture_EM: public PPCA {
 		 */
 
 
-		void optimize(int f_max_iter);
+		void optimize(int f_max_iter,int write_freq_mean, int write_freq_params);
 			/** Execute EM algorithm.
 			 *	Arguments:
 			 *		f_max_iter: int
 			 *			Maximum number of iterations to perform.
+			 *		write_freq_mean: int
+			 *			After how many iterations should we write mean to file. The initial means are always written to file by default.
+			 *		write_freq_params: int
+			 *			After how many iterations should we write mean to file. The initial params are always written to file by default.
 			 *	Returns:
 			 *		void
 			 */

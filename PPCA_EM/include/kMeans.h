@@ -64,8 +64,12 @@ class kMeans{
 		 *	Arguments:
 		 *		void
 		 *	Returns:
-		 *		this->newgroup: std::vector<int>
+		 *		newgroup: std::vector<int>
 		 *			Indices of the center assigned to each data point.
+		 */
+		mat getCenters(void);
+		/** Get the means.
+		 *
 		 */
 		int findClosest(int in_indx);
 		/**	Find closest center for input inVec.

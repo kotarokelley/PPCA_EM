@@ -21,14 +21,14 @@ kMeans::kMeans(int f_numCenters, int f_numIter, mat f_data):
 void kMeans::initCentersRandom(void){
 
 	std::srand(std::time(NULL));										// generate seed.
-	int * indices = new int[this->numDat];
+	int * indices = new int[numDat]();
 	int counter = 0;
 
-	while (counter<this->numCenters){
-		int indx = std::rand() % this->numDat;							// randomly choose indices for centers. draw from 0-(data.n_cols-1)
+	while (counter<numCenters){
+		int indx = std::rand() % numDat;							// randomly choose indices for centers. draw from 0-(data.n_cols-1)
 		if (!indices[indx]){
 			indices[indx] = 1;
-			this->centers.col(counter) = this->data.col(indx);
+			centers.col(counter) = data.col(indx);
 			counter++;
 		}
 	}
@@ -37,34 +37,37 @@ void kMeans::initCentersRandom(void){
 }
 
 std::vector<int> kMeans::findSolution(void){
+
 	int counter = 0;
-	//float maxDist = std::numeric_limits<float>::max();					// set to max float
 
+	while(counter <numIter){//!hasConverged() && counter < numIter){			// keep looping until return conditions are met.
 
-	while(!this->hasConverged() && counter < this->numIter){			// keep looping until return conditions are met.
-		for (int i=0; i<this->numDat; i++){
-			this->oldgroup[i] = this->newgroup[i];						// copy newgroup to oldgroup before next iteration of center assignment for each data point
-		}
+		for (int i=0; i<numDat; i++)
+			oldgroup[i] = newgroup[i];						// copy newgroup to oldgroup before next iteration of center assignment for each data point
 
-		for (int i=0; i<this->numDat; i++){
-			int closest_indx = this->findClosest(i);					// Find closest center for each data point.
-			this->newgroup[i] = closest_indx;
-		}
+		for (int i=0; i<numDat; i++)
+			newgroup[i] = findClosest(i);// Find closest center for each data point.
 
-		this->recalc_Centers();
+		recalc_Centers();
 		counter++;
 	}
 
-	return this->newgroup;												// Converged or maximum iterations met.
+	return newgroup;												// Converged or maximum iterations met.
+}
 
+mat kMeans::getCenters(void){
+	return centers;
 }
 
 int kMeans::findClosest(int in_indx){
-	double dist = std::numeric_limits<float>::max();						//set to max float
+
+	double dist = std::numeric_limits<double>::max();						//set to max double
 	double temp;
 	int out_indx;
-	for (int i=0; i<this->numCenters; i++){
-		temp = norm_dot(this->centers.col(i),this->data.col(in_indx));   // calculate distance to each center
+
+	for (int i=0; i<numCenters; i++){
+		temp = norm(centers.col(i) - data.col(in_indx),2);   // calculate distance to each center
+
 		if (temp < dist){
 			dist = temp;
 			out_indx = i;
@@ -72,20 +75,33 @@ int kMeans::findClosest(int in_indx){
 	}
 
 	return out_indx;
-
 }
 
 void kMeans::recalc_Centers(void){
-	mat temp(this->data);
-	for (int i=0; i<this->numCenters; i++){
 
+	int * counts = new int[numCenters]();
+
+	mat tempCenters(centers.n_rows,centers.n_cols,fill::zeros);
+
+	for (int i=0; i<numDat; i++){
+
+		tempCenters.col(newgroup[i]) += data.col(i);
+		counts[newgroup[i]] ++;
 	}
+
+	for (int i=0; i<numCenters; i++){
+		if(counts[i]>=1)
+			centers.col(i) = tempCenters.col(i)/ (double)counts[i];
+		else
+			std::cout << i << " ERROR: kmeans counts for center: " << i << " is 0" << "\n"; // TODO: throw exception
+	}
+	delete [] counts; counts = NULL;
 }
 
 bool kMeans::hasConverged(void){
 	bool converged = true;
-	for (int i=0; i<this->numDat; i++){
-		if (this->newgroup[i] != this->oldgroup[i])				// compare indices from the new and old centers for each data point
+	for (int i=0; i<numDat; i++){
+		if (newgroup[i] != oldgroup[i])				// compare indices from the new and old centers for each data point
 			converged = false;
 	}
 	return converged;
