@@ -24,7 +24,7 @@
 using namespace arma;
 
 
-void transform_Img(const double* inImg, double* outImg, int xpix, int ypix, double delta_x, double delta_y, double theta);
+void transform_Img_single(const double* inImg, double* outImg, int xpix, int ypix, double delta_x, double delta_y, double theta, double max_radius);
 	/**Rotate and translate image.
 	 * Arguments:
 	 * 		inImg: const double*
@@ -44,6 +44,27 @@ void transform_Img(const double* inImg, double* outImg, int xpix, int ypix, doub
 	 * Returns:
 	 *		void
 	 */
+void transform_Img_multiple(const double* inImg, double* outImg, int xpix, int ypix, int numImg, double delta_x, double delta_y, double theta, double max_radius);
+	/**	Rotate and translate multiple images stored in a mat.
+	 * 	Arguments:
+	 * 		inImg: const double*
+	 * 			Input image.
+	 * 		outImg: double*
+	 * 			Output image. inImg and outImg are assumed to have the same dimensions and is not checked.
+	 * 		xpix: int
+	 * 			x pixels
+	 * 		ypix: int
+	 * 			y pixels
+	 * 		delta_x: double
+	 * 			Translational x shift in units of pixels.
+	 * 		delta_y: double
+	 * 			Translational y shift in units of pixels.
+	 * 		theta: double
+	 * 			Rotation shift in degrees.
+	 * Returns:
+	 *		void
+	 */
+
 void resample_Img(const double* inImg, double* outImg, int xpix, int ypix, int factor);
 	/**	Resamples image by a given factor by zero padding and FFT.
 	 * 	Arguments:

@@ -75,7 +75,8 @@ int main(void){
 	cv::waitKey(2000);									// display for 5 sec to check that image is not augmented.
 
 	delete f_data; f_data = NULL;
-	//delete f_data_double; f_data_double = NULL;
+
+	delete f_data_double; f_data_double = NULL;
 	delete r_data; r_data = NULL;
 	//delete r_data_double; r_data_double = NULL;
 
