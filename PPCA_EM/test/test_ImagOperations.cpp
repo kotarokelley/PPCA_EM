@@ -54,7 +54,7 @@ int main(void){
 	cv::waitKey(2000);
 
 	double * rotated_img_0 = new double[f_dim[0]*f_dim[1]]();
-	transform_Img_single(f_data_double, rotated_img_0, f_dim[0], f_dim[1], 0,  0,  90,  f_dim[0]/2);
+	transform_Img_single(f_data_double, rotated_img_0, f_dim[0], f_dim[1], 0,  0,  360,  f_dim[0]/2 + 4);
 
 	std::cout << "Displaying first image after transformation\n";
 	cv::Mat img_0_rot(cv::Size(f_dim[0],f_dim[1]),CV_64F,rotated_img_0);
