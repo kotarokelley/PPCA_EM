@@ -19,13 +19,13 @@
 #include <vector>
 #include <tuple>
 #include <math.h>
-#include <algorith>
+#include <algorithm>
 #include <sstream>
 #include <armadillo>
 #include <limits>
 
 #define SMALL_NUMBER 10e-100
-#define LARGE_NUMBER = std::numeric_limits<double>::max()
+#define LARGE_NUMBER std::numeric_limits<double>::max()
 
 //#include "NumericalRecipes.h"
 
@@ -126,8 +126,6 @@ class PPCA_Mixture_EM: public PPCA {
 	 *  "Mixtures of Probabilistic Principal Component Analysers," Tipping and Bishop 1999.
 	 *
      *	Class Methods:
-     *		initialize_uniform:
-     *			Find initial values for each model by assigning uniformly.
      *		initialize_random:
      *			Find initial values for each model by assigning by randomly picking data points.
      *		initialize_kmeans:
@@ -188,15 +186,6 @@ class PPCA_Mixture_EM: public PPCA {
     	/** Write to file mean images as an mrc file.
     	 * 	This is an optional output of the mean for visualization.
     	 */
-
-		void initialize_uniform(void);
-			/** Find initial values for posterior responsibility of mixture i,
-			 * 		Rni=p(i|tn) for each model by assigning uniform value of 1/n_models.
-			 *	Arguments:
-			 *		void
-			 *	Returns:
-			 *		void
-			 */
 		void initialize_random(void);
 			/** Find initial values for posterior responsibility of mixture i,
 			 * 		Rni=p(i|tn) for each model by random clustering of data.
@@ -258,7 +247,7 @@ class PPCA_Mixture_EM: public PPCA {
 			 *	Returns:
 			 *		double
 			 */
-		double PPCA_Mixture_EM::calc_log_Ptn_i(mat &f_samples, mat &f_mean, int f_n, int f_i, mat f_Cinv, double f_log_det_C){
+		double calc_log_Ptn_i(mat &f_samples, mat &f_mean, int f_n, int f_i, mat f_Cinv, double f_log_det_C);
 			/**	Helper function to calculate the marginal distribution of a data point for all models.
 			 *	Arguments:
 			 *		f_samples: mat
@@ -311,14 +300,12 @@ class PPCA_Mixture_EM: public PPCA {
 
 };
 
-class PPCA_Mixture_SAGS: public PPCA_EM {
+class PPCA_Mixture_SAG: public PPCA_Mixture_EM {
 	/** Mixture model probabilistic principal component analysis as derived in "Mixtures of Probabilistic Principal Component Analysers," Tipping and Bishop 1999.
 	 *  solved by stochastic average gradient method as reported in "A stochastic Gradient Method with an Exponential Convergence Rate for
 	 *  Strongly-Convex Optimization with Finite Training Sets," Roux, Schmidt, and Bach, 2012.s
 	 *
      *	Class Methods:
-     *		initialize_uniform_SAG:
-     *			Find initial values for each model by assigning Rni uniformly.
      *		initialize_random_SAG:
      *			Find initial values for each model by assigning Rni by randomly picking data points.
      *		initialize_kmeans_SAG:
@@ -379,14 +366,6 @@ public:
 
 	/**---Class Methods---***/
 
-	void initialize_uniform_SAG(void);
-		/** Find initial values for posterior responsibility of mixture i,
-		 * 		Rni=p(i|tn) for each model by assigning uniform value of 1/n_models.
-		 *	Arguments:
-		 *		void
-		 *	Returns:
-		 *		void
-		 */
 	void initialize_random_SAG(void);
 		/** Find initial values for posterior responsibility of mixture i,
 		 * 		Rni=p(i|tn) for each model by random clustering of data.
@@ -438,11 +417,13 @@ public:
 		 *		double:
 		 *		base learning rate.
 		 */
-	std::vector<double> calc_Cinv_log_det_C(std::vector<mat> &f_W_mat_vector, std::vector<mat> &f_out_mat_vector);
+	std::vector<double> calc_Cinv_log_det_C(std::vector<mat> &f_W_mat_vector, std::vector<double> f_noise_var, std::vector<mat> &f_out_mat_vector);
 		/**	Calculate Cinv matrices and corresponding log_det_C values.
 		 * 	Arguments:
 		 * 		f_W_mat_vector: reference to std::vector<mat>
 		 * 			W matrices to use.
+		 * 		f_noise_var: std::vector<double>
+		 * 			noise_var to use.
 		 * 		f_out_mat_vector: reference to std::vector<mat>
 		 * 			Output Cinv matrices.
 		 *	Returns:
@@ -500,8 +481,10 @@ public:
 		 * 			Estimated Lipschitz constant.
 		 */
 
-	std::vector<double> calc_grad_SAG(std::vector<mat> &f_Cinv_vector, mat &f_log_Ptn_i_mat, std::vector<mat> &f_W_mat_vector, mat &f_mean, std::vector<double> f_mix_frac, std::vector<double> f_mix_frac_softmax_coeff, mat &f_samples, int f_n_samples );
-		/**	Calculate the gradients for parameters and then add them to their respective running totals.
+	std::vector<double> calc_grad_SAG(std::vector<mat> &f_Cinv_vector, mat &f_log_Ptn_i_mat,
+			std::vector<mat> &f_W_mat_vector, mat &f_mean, std::vector<double> f_mix_frac,
+			std::vector<double> f_mix_frac_softmax_coeff, std::vector<double> f_noise_var, mat &f_samples, int f_n_samples );
+		/**	Calculate the gradients for parameters by evaluating analytical derivatives.
 		 * 	Arguments:
 		 * 		f_Cinv_vector: reference to std::vector<mat>
 		 * 			Pre-calculated Cinv matrices.
@@ -523,36 +506,40 @@ public:
 		 * 		std::vector<double>
 		 * 			A concatenated vector of all gradient values in the following order: mean(column major), noise_var, mix_frac_softmax, W mat(column major).
 		 */
+	std::vector<double> calc_grad_finite_dif_SAG(mat &f_log_Ptn_i_mat, std::vector<mat> f_W_mat_vector, mat f_mean, std::vector<double> f_mix_frac,
+			std::vector<double> f_mix_frac_softmax_coeff, std::vector<double> f_noise_var, mat &f_samples, int f_n_samples );
+	/**	Calculate the gradients for parameters by finite difference method.
+	 *
+	 */
 
 
 	/**---Class Members--**/
 
 	std::vector<double> mixfrac_softmax_coeff;
 
-	int n_mini_batch
+	int n_mini_batch;
 
 	double lip_const;
 
-	mat mean_prev;
-
-	std::vector<double> noise_var_prev;
-
-	std::vector<double> mixfrac_prev;
-
-	std::vector<mat> W_mat_vector_prev;
+	double base_rate;
 
 	mat grad_mean;
 
 	std::vector<double> grad_noise_var;
 
-	std::vector<double> grad_mixfrac;
+	std::vector<double> grad_mixfrac_softmax_coeff;
 
 	std::vector<mat> grad_W_mat_vector;
 
-	double base_rate;
+	mat grad_mean_prev;
 
+	std::vector<double> grad_noise_var_prev;
 
-}
+	std::vector<double> grad_mixfrac_softmax_coeff_prev;
+
+	std::vector<mat> grad_W_mat_vector_prev;
+
+};
 
 
 #endif /* PPCA_H_ */

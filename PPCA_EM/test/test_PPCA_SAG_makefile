@@ -1,0 +1,39 @@
+CC=c++
+BASEDIR = ..
+SDIR = $(BASEDIR)/src
+SDIR_TEST = $(BASEDIR)/test
+IDIR = $(BASEDIR)/include/
+ODIR=$(BASEDIR)/test/objects
+BINDIR=$(BASEDIR)/test/bin
+CFLAGS= -I$(IDIR) -fdiagnostics-color=never -Wall -pedantic -g -std=c++11 -stdlib=libc++ 
+LIBS = -lopencv_highgui -lopencv_core -lopencv_imgproc -larmadillo 
+MKDIR_P = mkdir -p
+
+_DEPS = Parser.h PPCA.h kMeans.h Exceptions.h ImageOperations.h
+	DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
+
+_OBJ = Parser.o PPCA.o kMeans.o ImageOperations.o
+	OBJECTS = $(patsubst %,$(ODIR)/%,$(_OBJ))
+
+_OBJ_TEST = test_PPCA_SAG.o 
+	OBJECTS_TEST = $(patsubst %,$(ODIR)/%,$(_OBJ_TEST))
+
+_CPP =  Parser.cpp PPCA.cpp kMeans.cpp ImageOperations.cpp
+	SRC = $(patsubst %,$(SDIR)/%,$(_CPP))
+
+_CPP_TEST = test_PPCA_SAG.cpp
+	SRC_TEST = $(patsubst %,$(SDIR_TEST)/%,$(_CPP_TEST))
+
+all: test_PPCA_SAG 
+
+test_PPCA_SAG: $(OBJECTS_TEST) $(OBJECTS) 
+	$(CC) $(CFLAGS) $(LIBS) -o $@ $^
+ 
+$(OBJECTS_TEST): $(SRC_TEST) $(DEPS) | $(ODIR)
+	$(CC) $(CFLAGS)-c -o $@ $< 
+
+$(ODIR)%.o: $(SDIR)%.cpp $(DEPS) | $(ODIR) 
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(ODIR):
+	$(MKDIR_P) $(ODIR)
