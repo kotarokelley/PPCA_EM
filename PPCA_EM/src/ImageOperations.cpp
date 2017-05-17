@@ -55,7 +55,7 @@ void transform_Img_single(const double* inImg, double* outImg, int xpix, int ypi
 				if (y2 == y1)
 					y1 +=1;
 
-				x2x1 = x2 - x1;
+				x2x1 = x2 - x1;						// Bilinear interpolation.
 				y2y1 = y2 - y1;
 				x2x = x2 - x_new;
 				y2y = y2 - y_new;
@@ -127,7 +127,7 @@ void transform_Img_multiple(const double* inImg, double* outImg, int xpix, int y
 				if (y2 == y1)
 					y1 +=1;
 
-				x2x1 = x2 - x1;
+				x2x1 = x2 - x1;						// Bilinear interpolation.
 				y2y1 = y2 - y1;
 				x2x = x2 - x_new;
 				y2y = y2 - y_new;
@@ -143,13 +143,6 @@ void transform_Img_multiple(const double* inImg, double* outImg, int xpix, int y
 						inImg[y1*xpix + x2 + offset] * xx1 * y2y +
 						inImg[y2*xpix + x1 + offset] * x2x * yy1 +
 						inImg[y2*xpix + x2 + offset] * xx1 * yy1);
-
-					//outImg[i*xpix + j + offset] =
-						//1.0 / (x2x1 * y2y1) *
-						//(inImg[x1*xpix + y1 + offset] * x2x * y2y +
-						//inImg[x2*xpix + y1 + offset] * xx1 * y2y +
-						//inImg[x1*xpix + y2 + offset] * x2x * yy1 +
-						//inImg[x2*xpix + y2 + offset] * xx1 * yy1);
 				}
 			}
 		}

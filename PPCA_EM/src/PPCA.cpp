@@ -7,18 +7,15 @@
 //============================================================================
 #include "PPCA.h"
 
-using namespace arma;
-
-#define SMALL_NUMBER 10e-100
 #define DEBUG
+
+using namespace arma;
 
 PPCA::PPCA(mat f_data, std::vector<int> f_dim, int f_n_components, int f_n_models):
 
 	n_obs(f_dim[2]), n_var(f_dim[0]*f_dim[1]),
 
 	n_components(f_n_components), n_models(f_n_models),	// Keep only the largest components.
-
-	//components_(f_n_models,mat(f_dim[0],f_n_components)), explained_variance_ratio(f_n_models,rowvec(f_n_components)),
 
 	mean(f_dim[0]*f_dim[1],f_n_models,fill::zeros), noise_var(f_n_models,0), data_dim(3)//, noise_var_model(f_n_models,0)
 {
@@ -99,7 +96,7 @@ PPCA_Mixture_EM::PPCA_Mixture_EM(mat f_data, std::vector<int> f_dim, int f_n_com
 
 		W_mat_vector(f_n_models,mat(f_dim[0]*f_dim[1],f_n_components,fill::zeros)), S_mat_vector(f_n_models,mat(f_dim[0]*f_dim[1],f_dim[0]*f_dim[1],fill::zeros)),
 
-		Minv_mat_vector(f_n_models,mat(f_n_components,f_n_components,fill::zeros)), has_init(0)
+		Minv_mat_vector(f_n_models,mat(f_n_components,f_n_components,fill::zeros)), log_likelihood(LARGE_NUMBER), has_init(0)
 {
 
 }
@@ -112,7 +109,7 @@ PPCA_Mixture_EM::PPCA_Mixture_EM(mat f_data, std::vector<int> f_dim, int f_n_com
 
 		W_mat_vector(f_n_models,mat(f_dim[0]*f_dim[1],f_n_components,fill::zeros)), S_mat_vector(f_n_models,mat(f_dim[0]*f_dim[1],f_dim[0]*f_dim[1],fill::zeros)),
 
-		Minv_mat_vector(f_n_models,mat(f_n_components,f_n_components,fill::zeros)), has_init(0)
+		Minv_mat_vector(f_n_models,mat(f_n_components,f_n_components,fill::zeros)), log_likelihood(LARGE_NUMBER), has_init(0)
 {
 
 	parse_prev_params(prev_run_filename);			//TODO this is doing redundant work to the initalization list.
@@ -511,6 +508,10 @@ void PPCA_Mixture_EM::update_Rni_all( void){
 			}
 		}
 
+		log_likelihood = 0;											// Calculate log likelihood.
+
+		for (int n=0; n<n_obs; n++)
+			log_likelihood += std::log(total[n]);
 
 	for (int n=0; n<n_obs; n++){									// Normalize.
 		for(int i=0; i<n_models; i++){
@@ -556,6 +557,27 @@ double PPCA_Mixture_EM::calc_log_Ptn_i(int f_n, int f_i, mat f_Cinv, double f_lo
 
 	return log_Ptn_i;
 }
+
+double PPCA_Mixture_EM::calc_log_Ptn_i(mat &f_samples, int f_n, int f_i, mat f_Cinv, double f_log_det_C){
+	colvec temp = f_samples.col(f_n) - mean.col(f_i);
+
+	double arg = as_scalar(temp.t()* f_Cinv * temp) / 2.0;
+
+	double log_Ptn_i = -0.5 * f_log_det_C -arg;
+
+	return log_Ptn_i;
+}
+
+double PPCA_Mixture_EM::calc_log_Ptn_i(mat &f_samples, mat &f_mean, int f_n, int f_i, mat f_Cinv, double f_log_det_C){
+	colvec temp = f_samples.col(f_n) - f_mean.col(f_i);
+
+	double arg = as_scalar(temp.t()* f_Cinv * temp) / 2.0;
+
+	double log_Ptn_i = -0.5 * f_log_det_C -arg;
+
+	return log_Ptn_i;
+}
+
 
 void PPCA_Mixture_EM::optimize(int f_max_iter, int write_freq_mean, int write_freq_params){
 
@@ -700,3 +722,392 @@ void PPCA_Mixture_EM::optimize(int f_max_iter, int write_freq_mean, int write_fr
 
 	}
 }
+
+PPCA_Mixture_SAG::PPCA_Mixture_SAG(mat f_data, std::vector<int> f_dim, int f_n_components, int f_n_models, int f_n_mini_batch){
+
+	PPCA_Mixture_EM(mat f_data, std::vector<int> f_dim, int f_n_components, int f_n_models);
+
+	mixfrac_softmax_coeff(f_n_models,0),  n_mini_batch(f_n_mini_batch), lip_const(0), mean_prev(f_dim[0]*f_dim[1],f_n_models,fill::zeros),
+
+	noise_var_prev(f_n_models,0), mixfrac_prev(f_n_models,0), W_mat_vector_prev(f_n_models,mat(f_dim[0]*f_dim[1],f_n_components,fill::zeros)),
+
+	grad_mean(f_dim[0]*f_dim[1],f_n_models,fill::zeros), grad_noise_var(f_n_models,0),
+
+	grad_mixfrac(f_n_models,0), grad_W_mat_vector(f_n_models,mat(f_dim[0]*f_dim[1],f_n_components,fill::zeros)), base_rate(0)
+}
+
+
+PPCA_Mixture_SAG::PPCA_Mixture_SAG(mat f_data, std::vector<int> f_dim, int f_n_components, int f_n_models, char* prev_run_filename, int f_n_mini_batch){
+
+	PPCA_Mixture_EM(mat f_data, std::vector<int> f_dim, int f_n_components, int f_n_models, char* prev_run_filename),
+
+	mixfrac_softmax_coeff(f_n_models,0), n_mini_batch(f_n_mini_batch), lip_const(0), grad_mean(f_dim[0]*f_dim[1],f_n_models,fill::zeros), grad_noise_var(f_n_models,0),
+
+	noise_var_prev(f_n_models,0), mixfrac_prev(f_n_models,0), W_mat_vector_prev(f_n_models,mat(f_dim[0]*f_dim[1],f_n_components,fill::zeros)),
+
+	grad_mean(f_dim[0]*f_dim[1],f_n_models,fill::zeros), grad_noise_var(f_n_models,0),
+
+	grad_mixfrac(f_n_models,0), grad_W_mat_vector(f_n_models,mat(f_dim[0]*f_dim[1],f_n_components,fill::zeros)), base_rate(0)
+}
+
+void PPCA_Mixture_SAG::initialize_uniform_SAG(void){
+	initialize_uniform();
+	base_rate = 1.0/16;
+	lip_const = 1.0;
+	mixfrac_softmax_coeff = mixfrac_to_softmax(mix_frac);
+
+}
+
+void PPCA_Mixture_SAG::initialize_random_SAG(void){
+	initialize_random();
+	base_rate = 1.0/16.0;
+	lip_const = 1.0;
+	mixfrac_softmax_coeff = mixfrac_to_softmax(mix_frac);
+}
+
+void PPCA_Mixture_SAG::initialize_kmeans_SAG(int f_max_iter){
+	initialize_kmean(f_max_iter);
+	base_rate = 1.0/16;
+	lip_const = 1.0;
+	mixfrac_softmax_coeff = mixfrac_to_softmax(mix_frac);
+}
+std::vector<double> PPCA_Mixture_SAG::mixfrac_to_softmax(std::vector<double> f_mix_frac_coeff){
+	std::vector<double> softmax_vales(f_mix_frac_coeff.size(),0);
+	for (int i=0; i<f_mix_frac_coeff.size(); i++){
+		softmax_values[i] = std::log(f_mix_frac_coeff[i]);
+	}
+	return softmax_values;
+}
+
+std::vector<double> PPCA_Mixture_SAG::softmax_to_mixfrac(std::vector<double> f_soft_max_coeff){
+
+	double norm(0);
+	std::vector<double> mix_frac_values(f_soft_max_coeff.size(),0);
+
+	for (int i=0; i<f_soft_max_coeff.size(); i++){
+		mix_frac_values[i] = std::exp(f_soft_max_coeff[i]);
+		norm += mix_frac_values[i]
+	}
+	for (int i=0; i<f_soft_max_coeff.size(); i++){
+		mix_frac_values[i] /= norm;
+	}
+
+	return mix_frac_values;
+}
+
+mat PPCA_Mixture_SAG::get_mini_batch_SAG(int f_n_mini_batch, double max_trans){
+
+	mat outmat(data_dim[0]*data_dim[1], f_n_mini_batch);
+
+	std::srand(std::time(NULL));							// generate seed.
+
+	for (int i=0; i<f_n_mini_batch; i++){
+
+		int indx = std::rand() % n_obs;
+		double * temp = new double[data_dim[0]*data_dim[1]];
+
+		double d, theta, delta_x, delta_y;
+
+		d = (double)rand() / std::RAND_MAX;
+		theta = d * 360.0;
+
+		d = (double)rand() / std::RAND_MAX;
+		delta_x = -max_trans + d * (max_trans*2);
+
+		d = (double)rand() / std::RAND_MAX;
+		delta_y = -max_trans + d * (max_trans*2);
+
+		transform_Img_single(data.col(indx).memptr(), temp, data_dim[0], data_dim[1], delta_x, delta_y, theta, (double)std::min(data_dim[0],data_dim[1]))
+		for (int k; k<data_dim[0]*data_dim[1]; k++){
+			outmat(k,indx) = temp[k];
+		}
+		delete [] temp; temp = NULL;
+	}
+
+	return outmat;
+}
+
+double PPCA_Mixture_SAG::calc_base_rate_SAG(void){
+
+	return std::max(1.0/16, std::pow(2,1.0-(double)n_iter/150.0));
+
+}
+
+std::vector<double> PPCA_Mixture_SAG::calc_Cinv_log_det_C(std::vector<mat> &f_W_mat_vector, std::vector<double> f_noise_var; std::vector<mat> &f_out_mat_vector){
+
+	std::vector<double> log_det_C_vector(n_models,0);
+
+	for (int i=0; i<n_models; i++){
+
+		mat C = eye<mat>(n_var,n_var) * f_noise_var[i] +  f_W_mat_vector[i] * f_W_mat_vector[i].t();
+
+		mat U_C; mat V_C; vec s_C(n_var); vec s_C_inv(n_var);
+
+		svd(U_C,s_C,V_C,C);
+
+		for (int k=0; k<n_var; k++){
+			if (std::abs(s_C(k)) < SMALL_NUMBER){
+				s_C_inv(k) = 0;
+			}
+			else{
+				if (s_C(k) < 0)
+					log_det_C_vector[i] += std::log(- s_C(k));
+				else
+					log_det_C_vector[i] += std::log(s_C(k));
+				s_C_inv(k) = 1.0/s_C(k);
+			}
+		}
+
+		f_out_mat_vector[i] = V_C * diagmat(s_C_inv) * U_C.t();
+	}
+	return log_det_C;
+}
+
+void PPCA_Mixture_SAG::calc_log_Ptn_i_mat(std::vector<mat> &f_Cinv_vector, std::vector<double> f_log_det_C_vector, mat &f_mean, mat &f_samples, int f_n_samples, mat &f_out_mat){
+
+	for (int i=0; i<n_models; i++){
+
+		for (int n=0; n<f_n_samples; n++)
+			f_out_mat(n,i) = calc_log_Ptn_i(f_samples, f_mean, n, i, f_Cinv_vector[i], f_log_det_C_vector[i]);
+	}
+}
+
+double PPCA_Mixture_SAG::estimate_log_likelihood(mat &f_log_Ptn_i_mat, std::vector<double> f_mixfrac, mat &f_samples, int f_n_samples){
+
+	double * total = new double[f_n_samples]();
+	double * max = new double[f_n_samples]();		// Store largest log_Ptn_i for each observation. This will be subtracted for each log_Ptn_i to avoid overflow.
+
+	for (int n=0; n<f_n_samples; n++)
+		max[n] = f_log_Ptn_i.row(n).max();
+
+	for (int n=0; n<f_n_samples; n++){								// subtract largest log_Ptn_i from each model for each observation
+
+		for (int i=0; i<n_models; i++){							// This is all for avoiding large numbers. Better numerical stability.
+
+			f_log_Ptn_i(n,i) -= (max[n]) ;
+
+			total[n] += std::exp(f_log_Ptn_i_mat(n,i)) * f_mixfrac[i];
+
+		}
+	}
+
+	int out_likelihood(0);											// Calculate log likelihood.
+
+	for (int n=0; n<n_obs; n++)
+		out_likelihood += std::log(total[n]);
+
+	return out_likelihood;
+}
+
+double PPCA_Mixture_SAG::estimate_Lip_SAG(int iter, double f_k_1, double f_k, double f_grad_k){
+
+	if (n_iter%iter){
+		return (double)n_iter / std::pow(2,1.0/150.0);
+	}
+
+	else {
+		double L(1);
+		while (f_k_1 - f_k <= f_grad_k)
+	}
+	return 0;				// TODO implements this...
+}
+
+std::vector<double> PPCA_Mixture_SAG::calc_grad_SAG(std::vector<mat> &f_Cinv_vector, mat &f_log_Ptn_i_mat, std::vector<mat> &f_W_mat_vector, mat &f_mean, std::vector<double> f_mix_frac, std::vector<double> f_mix_frac_softmax_coeff, std::vector<double> f_noise_var, f_mat &f_samples, int f_n_samples ){
+
+	mat temp_grad_mean(data_dim[0]*data_dim[1],n_models,fill::zeros);
+
+	std::vector<double> temp_grad_noise_var(n_models,0);
+
+	std::vector<double> temp_grad_mixfrac(n_models,0);
+
+	std::vector<double> temp_grad_mix_frac_softmax_coeff(n_models,0);
+
+	std::vector<mat> temp_grad_C_mat_vector(n_models,mat(data_dim[0]*data_dim[1],n_components,fill::zeros));
+
+	std::vector<mat> temp_grad_W_mat_vector(n_models,mat(data_dim[0]*data_dim[1],n_components,fill::zeros));
+
+
+	for (int i=0; i<n_models; i++){																	// Pre-calculate the normalization constant for each particle and each noise var.
+
+		norm_mix_frac_softmax_coeff[i] += std::exp(f_mix_frac_softmax_coeff[i]);
+
+		for (int n=0; n<n_samples; n++){
+			norm[n] += f_mix_frac[i] * std::exp(f_log_Ptn_i_mat(n,i);
+		}
+	}
+
+	for (int i=0; i<n_models; i++){
+		for (int n=0; n<n_samples; n++){
+
+			double numer = f_mix_frac[i] * std::exp(f_log_Ptn_i_mat(n,i))
+
+			vec temp_vec = f_Cinv_vector[i] * (f_samples.col(n)-f_mean.col(i));						// Pre-calculate Cinv * (tn-ui) used for calculating gradients.
+
+			temp_grad_mean[i] += numer / norm[n] * temp_vec;
+
+			temp_grad_mixfrac[i] += numer / f_mix_frac[i] / norm[n] ;
+
+			temp_grad_C_mat_vector += numer / norm[n] * 0.5 * (f_Cinv_vector[i] + temp_vec * temp_vec.t());
+
+		}
+
+	}
+
+	for (int i=0; i<n_models; i++){								// Use chain rule to calculate gradients with respect to noise_var and softmax coefficient.
+		temp_grad_noise_var[i]  = trace( temp_grad_C_mat_vector[i]);						// This calculation is the derivative with respect to sig^2, and does not constrain noise_var to be positive.
+		for (int j=0; j<n_models; j++){
+
+			if (i==j)
+				temp_grad_mix_frac_softmax_coeff[i] += temp_grad_mixfrac[i] * (std::exp(mix_frac_softmax_coeff[i])/norm_mix_frac_softmax_coeff[i] - std::pow(std::exp(f_mix_frac_softmax_coeff[i]),2)/std::pow(norm_mix_frac_softmax_coeff[i]),2);
+			else
+				temp_grad_mix_frac_softmax_coeff[i] += temp_grad_mixfrac[i] * (- std::exp(f_mix_frac_softmax_coeff[i]) * std::exp(f_mix_frac_softmax_coeff[j]) / std::pow(norm_mix_frac_softmax_coeff[i]),2);
+		}
+
+	}
+
+	for (int i=0; i<n_models; i++){								// Use chain rule to calculate gradients with respect to W mat.
+		for (int j=0; j<data_dim[0]*data_dim[1]; j++){
+			for (int k=0; k<f_n_components; k++){
+
+				mat temp_mat(data_dim[0]*data_dim[1],fill::zeros);
+
+				temp_mat.col(j) += f_W_mat_vector[i].col(k);
+
+				temp_mat.row(j) += f_W_mat_vector[i].col(k).t();
+
+				temp_grad_W_mat_vector(j,k) = trace(temp_grad_C_mat_vector[i].t() * temp_mat);
+			}
+		}
+	}
+
+	std::vector<double> out_vector( temp_grad_mean.n_rows*temp_grad_mean.n_cols + temp_grad_noise_var.size() + temp_grad_mix_frac_softmax_coeff.size() + temp_grad_W_mat_vector.n_rows*temp_grad_W_mat_vector.n_cols,0);
+
+	for (int k=0; k<temp_grad_mean.n_rows*temp_grad_mean.n_cols; k++)
+		out_vector[k] = temp_grad_mean(k);
+
+	for (int k=0; k<temp_grad_noise_var.size(); k++)
+		out_vector[k + temp_grad_mean.n_rows*temp_grad_mean.n_cols] = temp_grad_noise_var[k];
+
+	for (int k=0; k<temp_grad_mix_frac_softmax_coeff.size(); k++)
+		out_vector[k + temp_grad_mean.n_rows*temp_grad_mean.n_cols + temp_grad_noise_var.size()] = temp_grad_mix_frac_softmax_coeff[k];
+
+	for (int k=0; k<n_models ; k++){
+		int num_elements = temp_grad_W_mat_vector[0].n_rows * temp_grad_W_mat_vector[0].n_cols;
+		for (int j=0; j<num_elements; j++)
+			out_vector[k*num_elements + j + emp_grad_mean.n_rows*temp_grad_mean.n_cols + temp_grad_noise_var.size() + temp_grad_mix_frac_softmax_coeff.size()] = temp_grad_W_mat_vector[k](j);
+	}
+
+	return out_vector;
+
+}
+
+std::vector<double> PPCA_Mixture_SAG::calc_grad_finite_dif_SAG(mat &f_log_Ptn_i_mat, std::vector<mat> f_W_mat_vector, mat f_mean, std::vector<double> f_mix_frac, std::vector<double> f_mix_frac_softmax_coeff, std::vector<double> f_noise_var, mat &f_samples, int f_n_samples ){
+
+	//double PPCA_Mixture_SAG::estimate_log_likelihood(mat &f_log_Ptn_i_mat, std::vector<double> f_mixfrac, mat &f_samples, int f_n_samples){
+	//void PPCA_Mixture_SAG::calc_log_Ptn_i_mat(std::vector<mat> &f_Cinv_vector, std::vector<double> f_log_det_C_vector, mat &f_mean, mat &f_samples, int f_n_samples, mat &f_out_mat){
+	//std::vector<double> PPCA_Mixture_SAG::calc_Cinv_log_det_C(std::vector<mat> &f_W_mat_vector, std::vector<mat> &f_out_mat_vector){
+
+	double esp = 10^-5;
+
+	std::vector<double> norm(f_n_samples,0);
+
+	std::vector<double> norm_mix_frac_softmax_coeff(n_models,0);
+
+	std::vector<mat> temp_grad_C_vector(f_n_models,mat(data_dim[0]*data_dim[1],n_components,fill::zeros));
+
+	mat temp_grad_mean(data_dim[0]*data_dim[1],n_models,fill::zeros);
+
+	std::vector<double> temp_grad_noise_var(n_models,0);
+
+	std::vector<double> temp_grad_mixfrac(n_models,0);
+
+	std::vector<double> temp_grad_mix_frac_softmax_coeff(n_models,0);
+
+	//std::vector<mat> temp_grad_C_mat_vector(n_models,mat(data_dim[0]*data_dim[1],n_components,fill::zeros));
+
+	std::vector<mat> temp_grad_W_mat_vector(n_models,mat(data_dim[0]*data_dim[1],n_components,fill::zeros));
+
+	std::vector<mat> temp_Cinv_mat_vector(n_models, mat(data_dim[0]*data_dim[1],data_dim[0]*data_dim[1],fill::zeros));		// Calculate gradients for mean first
+	std::vector<double> temp_log_det_C = calc_Cinv_log_det_C(f_W_mat_vector, f_noise_var, temp_Cinv_mat);
+
+	mat temp_log_Ptn_i_mat(f_n_samples,n_models);
+	calc_log_Ptn_i_mat(temp_Cinv_mat_vector, temp_log_det_C, f_mean, f_samples, f_n_samples, temp_log_Ptn_i_mat);
+	double f0 = estimate_log_likelihood(mat &f_log_Ptn_i_mat, std::vector<double> f_mixfrac, mat &f_samples, int f_n_samples);
+
+	for (int i=0; i<n_models; i++){																	// Pre-calculate the normalization constant for each particle and each noise var.
+		for (int j=0; j<data_dim[0]*data_dim[1]; j++){
+
+			f_mean(j,i) += esp;																		// Perturb a single element.
+			calc_log_Ptn_i_mat(temp_Cinv_mat_vector, temp_log_det_C, f_mean, f_samples, f_n_samples, temp_log_Ptn_i_mat);
+
+			double f1 = estimate_log_likelihood(mat &f_log_Ptn_i_mat, std::vector<double> f_mixfrac, mat &f_samples, int f_n_samples);
+			f_mean(j,i) -= esp;
+
+			temp_grad_mean(j,i) = (f1-f0) / esp;
+		}
+
+	}
+
+	// Calculate gradients for noise var and mix_frac_soft_max.
+	calc_log_Ptn_i_mat(temp_Cinv_mat_vector, temp_log_det_C, f_mean, f_samples, f_n_samples, temp_log_Ptn_i_mat);
+	f0 = estimate_log_likelihood(temp_log_Ptn_i_mat, f_mixfrac, f_samples, f_n_samples);
+
+	for (int i=0; i<n_models; i++){
+
+		f_mix_frac_softmax_coeff[i] += esp;
+		f_mix_frac  = softmax_to_mixfrac(f_mix_frac_softmax_coeff);
+		double f1 = estimate_log_likelihood(temp_log_Ptn_i_mat, f_mix_frac, f_samples, f_n_samples);
+
+		f_mix_frac_softmax_coeff[i] -= esp;
+		f_mix_frac = softmax_to_mixfrac(f_mix_frac_softmax_coeff);
+
+		temp_grad_mix_frac_softmax_coeff[i] = (f1-f0)/esp;
+
+	}
+
+
+
+	for (int i=0; i<n_models; i++){
+
+		f_noise_var[i] += esp;
+		temp_log_det_C = calc_Cinv_log_det_C(f_W_mat_vector, f_noise_var, temp_Cinv_mat);
+		calc_log_Ptn_i_mat(temp_Cinv_mat_vector, temp_log_det_C, f_mean, f_samples, f_n_samples, temp_log_Ptn_i_mat);
+		double f1 = estimate_log_likelihood(temp_log_Ptn_i_mat, f_mixfrac, f_samples, f_n_samples);
+
+		f_noise_var[i] -= esp;
+
+		temp_grad_noise_var[i] = (f1-f0)/esp;
+	}
+
+	for (int i=0; i<n_models; i++){
+
+
+
+		temp_log_det_C = calc_Cinv_log_det_C(f_W_mat_vector, f_noise_var, temp_Cinv_mat);
+		calc_log_Ptn_i_mat(temp_Cinv_mat_vector, temp_log_det_C, f_mean, f_samples, f_n_samples, temp_log_Ptn_i_mat);
+		double f1 = estimate_log_likelihood(temp_log_Ptn_i_mat, f_mixfrac, f_samples, f_n_samples);
+
+
+	}
+
+
+	std::vector<double> out_vector( temp_grad_mean.n_rows*temp_grad_mean.n_cols + temp_grad_noise_var.size() + temp_grad_mix_frac_softmax_coeff.size() + temp_grad_W_mat_vector.n_rows*temp_grad_W_mat_vector.n_cols,0);
+
+	for (int k=0; k<temp_grad_mean.n_rows*temp_grad_mean.n_cols; k++)
+		out_vector[k] = temp_grad_mean(k);
+
+	for (int k=0; k<temp_grad_noise_var.size(); k++)
+		out_vector[k + temp_grad_mean.n_rows*temp_grad_mean.n_cols] = temp_grad_noise_var[k];
+
+	for (int k=0; k<temp_grad_mix_frac_softmax_coeff.size(); k++)
+		out_vector[k + temp_grad_mean.n_rows*temp_grad_mean.n_cols + temp_grad_noise_var.size()] = temp_grad_mix_frac_softmax_coeff[k];
+
+	for (int k=0; k<n_models ; k++){
+		int num_elements = temp_grad_W_mat_vector[0].n_rows * temp_grad_W_mat_vector[0].n_cols;
+		for (int j=0; j<num_elements; j++)
+			out_vector[k*num_elements + j + emp_grad_mean.n_rows*temp_grad_mean.n_cols + temp_grad_noise_var.size() + temp_grad_mix_frac_softmax_coeff.size()] = temp_grad_W_mat_vector[k](j);
+	}
+
+	return out_vector;
+}
+

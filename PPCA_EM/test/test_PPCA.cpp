@@ -19,15 +19,15 @@ int main(void){
 
 	char * filename = "zip_test_plusnoise.mrc";
 
-	mrcParser testParser = mrcParser(filename);  // input binary data
+	mrcParser testParser = mrcParser(filename);  					// input binary data
 
-	char * f_data = testParser.getData(false);			// extract data, verbose off
+	char * f_data = testParser.getData(false);						// extract data, verbose off
 
 	char * f_header = testParser.getHdr();
 
-	std::vector<int> f_dim = testParser.getDim();					// get dimension of image stack TODO, this needs to be fixed since when testParser goes out of scope, f_dim will go out of scope.
+	std::vector<int> f_dim = testParser.getDim();					// get dimension of image stack
 
-	int f_pixelType = testParser.getPixelType();		// get pixel type
+	int f_pixelType = testParser.getPixelType();					// get pixel type
 
 
 	std::cout << "Data Set:\n";
