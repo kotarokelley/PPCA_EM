@@ -767,8 +767,11 @@ void PPCA_Mixture_SAG::initialize_kmeans_SAG(int f_max_iter){
 	lip_const = 1.0;
 	mixfrac_softmax_coeff = mixfrac_to_softmax(this->mixfrac);
 }
+
 std::vector<double> PPCA_Mixture_SAG::mixfrac_to_softmax(std::vector<double> f_mix_frac_coeff){
+
 	std::vector<double> softmax_values(f_mix_frac_coeff.size(),0);
+
 	for (int i=0; i<f_mix_frac_coeff.size(); i++){
 		softmax_values[i] = std::log(f_mix_frac_coeff[i]);
 	}

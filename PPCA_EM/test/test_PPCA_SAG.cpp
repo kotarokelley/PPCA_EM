@@ -54,12 +54,12 @@ int main(void){
 
 	std::cout << "Constructing a PPCA_Mixture_SAG object, initialize with data from: " << filename << "\n";
 
-	std::cout << "Declare 10 components and 10 models mini batch size: 10 through constructor.\n";
+	std::cout << "Declare 2 components and 2 models mini batch size: 10 through constructor.\n";
 
 	arma::mat f_data_mat = arma::mat(f_data_double,f_dim[0]*f_dim[1],f_dim[2]);		// format data into an mat object
 
 
-	PPCA_Mixture_SAG pca = PPCA_Mixture_SAG( f_data_mat, f_dim, 10, 10, 10);
+	PPCA_Mixture_SAG pca = PPCA_Mixture_SAG( f_data_mat, f_dim, 2, 2, 10);
 
 	std::cout << "Checking that data did not get altered by passing to PPCA_Mixture_SAG constructor.\n";
 
@@ -96,7 +96,7 @@ int main(void){
 
 	std::cout << "Testing function initialize_random.\n";
 	start = std::clock();
-	pca.initialize_random();
+	pca.initialize_random_SAG();
 	stop = std::clock();
 	elapsed = (double(stop-start))/CLOCKS_PER_SEC;
 	std::cout << "Function initialize_random took: " << elapsed << " s\n\n";
@@ -115,6 +115,22 @@ int main(void){
 
 
 	std::cout << "Displaying the values of mixfrac_softmax_coeff for each model.\n\n";
+
+	for (int i=0; i<pca.n_models; i++)
+		std::cout << "mixfrac_softmax_coeff[" << i << "]: " << pca.mixfrac_softmax_coeff[i] << "\n";
+	std::cout << "\n";
+
+	std::cout << "Computing gradient vector using function calc_grad_SAG\n\n";
+
+	std::vector<double> PPCA_Mixture_SAG::calc_grad_SAG(std::vector<mat> &f_Cinv_vector, mat &f_log_Ptn_i_mat,
+			std::vector<mat> &f_W_mat_vector, mat &f_mean, std::vector<double> f_mix_frac,
+			std::vector<double> f_mix_frac_softmax_coeff, std::vector<double> f_noise_var, mat &f_samples, int f_n_samples ){
+
+	std::cout << "Computing gradient vector using function calc_grad_finite_dif_SAG\n\n"
+
+
+
+
 
 
 	//std::cout << "Performing 100 round of optimizations.\n";
