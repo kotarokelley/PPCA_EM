@@ -67,9 +67,9 @@ class PPCA {
 	 */
 
 	public:
-		virtual ~ PPCA() {		// clean up dynamically allocated data array
+		//virtual ~ PPCA() {		// clean up dynamically allocated data array
 
-		}
+		//}
 		/**---Constructors---**/
 
 		PPCA(mat f_data, std::vector<int> f_dim, int f_n_components, int f_n_models);
@@ -156,10 +156,10 @@ class PPCA_Mixture_EM: public PPCA {
      **/
 	public:
 		/**---Destructor---**/
-		~ PPCA_Mixture_EM() {		// clean up dynamically allocated data array
+		//~ PPCA_Mixture_EM() {		// clean up dynamically allocated data array
 			//delete [] mixfrac; mixfrac = NULL;
 
-		}
+		//}
 
 		/**---Constructors---**/
 
@@ -349,10 +349,6 @@ class PPCA_Mixture_SAG: public PPCA_Mixture_EM {
      **/
 public:
 	/**---Destructor---**/
-	~ PPCA_Mixture_SAG() {		// clean up dynamically allocated data array
-		//delete [] mixfrac; mixfrac = NULL;
-
-	}
 
 	/**---Constructors---**/
 
@@ -449,6 +445,8 @@ public:
 		 * 		void
 		 *
 		 */
+	void calc_log_Ptn_i_mat_no_norm(std::vector<mat> &f_Cinv_vector, std::vector<double> f_log_det_C_vector, mat &f_mean, mat &f_samples, int f_n_samples, mat &f_out_mat);
+
 	double estimate_log_likelihood(mat &f_log_Ptn_i_mat, std::vector<double> f_mixfrac, mat &f_samples, int f_n_samples);
 		/**	Estimate the log likelihood using a subset of the data.
 		 * 	Arguments:
@@ -481,8 +479,7 @@ public:
 		 * 			Estimated Lipschitz constant.
 		 */
 
-	std::vector<double> calc_grad_SAG(std::vector<mat> &f_Cinv_vector, mat &f_log_Ptn_i_mat,
-			std::vector<mat> &f_W_mat_vector, mat &f_mean, std::vector<double> f_mix_frac,
+	std::vector<double> calc_grad_SAG(std::vector<mat> &f_Cinv_vector, mat &f_log_Ptn_i_mat, std::vector<mat> &f_W_mat_vector, mat &f_mean, std::vector<double> f_mix_frac,
 			std::vector<double> f_mix_frac_softmax_coeff, std::vector<double> f_noise_var, mat &f_samples, int f_n_samples );
 		/**	Calculate the gradients for parameters by evaluating analytical derivatives.
 		 * 	Arguments:
@@ -506,7 +503,7 @@ public:
 		 * 		std::vector<double>
 		 * 			A concatenated vector of all gradient values in the following order: mean(column major), noise_var, mix_frac_softmax, W mat(column major).
 		 */
-	std::vector<double> calc_grad_finite_dif_SAG(mat &f_log_Ptn_i_mat, std::vector<mat> f_W_mat_vector, mat f_mean, std::vector<double> f_mix_frac,
+	std::vector<double> calc_grad_finite_dif_SAG(std::vector<mat> f_W_mat_vector, mat f_mean, std::vector<double> f_mix_frac,
 			std::vector<double> f_mix_frac_softmax_coeff, std::vector<double> f_noise_var, mat &f_samples, int f_n_samples );
 	/**	Calculate the gradients for parameters by finite difference method.
 	 *

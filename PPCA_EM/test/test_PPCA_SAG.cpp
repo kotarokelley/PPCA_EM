@@ -97,6 +97,8 @@ int main(void){
 	std::cout << "Testing function initialize_random.\n";
 	start = std::clock();
 	pca.initialize_random_SAG();
+
+	std::cout << "\n";
 	stop = std::clock();
 	elapsed = (double(stop-start))/CLOCKS_PER_SEC;
 	std::cout << "Function initialize_random took: " << elapsed << " s\n\n";
@@ -122,15 +124,40 @@ int main(void){
 
 	std::cout << "Computing gradient vector using function calc_grad_SAG\n\n";
 
-	std::vector<double> PPCA_Mixture_SAG::calc_grad_SAG(std::vector<mat> &f_Cinv_vector, mat &f_log_Ptn_i_mat,
-			std::vector<mat> &f_W_mat_vector, mat &f_mean, std::vector<double> f_mix_frac,
-			std::vector<double> f_mix_frac_softmax_coeff, std::vector<double> f_noise_var, mat &f_samples, int f_n_samples ){
+	int n_samples(10);
+	int n_var = pca.n_var;
+	int n_models = pca.n_models;
+	std::vector<mat> C_inv_vector(n_models,mat(n_var,n_var,fill::zeros));
+	mat log_Ptn_i_mat(n_samples,n_models);
 
-	std::cout << "Computing gradient vector using function calc_grad_finite_dif_SAG\n\n"
+	mat sample_data(n_var,n_samples);
+	std::srand(std::time(NULL));							// generate seed.
+
+	for (int n=0; n<n_samples; n++){
+		int idx = std::rand() % 100;
+		sample_data.col(n) = pca.data.col(idx);
+	}
+
+	std::vector<double> log_det_C = pca.calc_Cinv_log_det_C(pca.W_mat_vector, pca.noise_var, C_inv_vector);
+	pca.calc_log_Ptn_i_mat(C_inv_vector, log_det_C, pca.mean, sample_data, n_samples, log_Ptn_i_mat);
+
+	std::vector<double> grad_analytical;
+	for (int i=0; i<10; i++)
+		grad_analytical = pca.calc_grad_SAG(C_inv_vector,log_Ptn_i_mat, pca.W_mat_vector, pca.mean, pca.mixfrac, pca.mixfrac_softmax_coeff, pca.noise_var, sample_data, n_samples);
 
 
+	std::cout << "Computing gradient vector using function calc_grad_finite_dif_SAG\n\n";
 
+	std::vector<double> grad_finite_dif;
+	for (int i=0; i<10; i++)
+		grad_finite_dif = pca.calc_grad_finite_dif_SAG(pca.W_mat_vector, pca.mean, pca.mixfrac, pca.mixfrac_softmax_coeff, pca.noise_var, sample_data, n_samples );
 
+	std::cout << "Comparing gradient vectors calculated analytically and finite differences\n\n";
+
+	for (int k=0; k<grad_analytical.size(); k++){
+			std::cout << grad_analytical[k] << "	"<< grad_finite_dif[k] << "\n";
+	}
+	std::cout << "\n";
 
 
 	//std::cout << "Performing 100 round of optimizations.\n";
@@ -145,12 +172,13 @@ int main(void){
 
 
 
-
-
 	// cleanup
 	//delete testParser; testParser = NULL;
-	delete f_data; f_data = NULL;
-	delete f_header; f_header = NULL;
+	//delete f_data; f_data = NULL;
+	//delete f_header; f_header = NULL;
+
+
+
 	delete [] f_data_float; f_data_float = NULL;
 	delete [] f_data_double; f_data_double = NULL;
 	//delete pca; pca = NULL;
